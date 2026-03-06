@@ -1,0 +1,206 @@
+.bodyscreen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #f2f2f2; 
+  margin: 0; 
+  font-family: "Poppins", sans-serif;
+}
+/* Container Layout */
+.login-container {
+  font-family: "Poppins", sans-serif; 
+  display: flex;
+  width: 850px;              /* Reduced size */
+  height: 500px;             /* Not full screen */
+  border-radius: 16px;       /* Rounded corners */
+  overflow: hidden;          /* Keep circles inside */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Soft shadow */
+  background: #fff
+}
+
+/* Left Section */
+.login-left {
+  flex: 1;
+  background: linear-gradient(135deg, #000000, #333333);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-left .overlay {
+  text-align: center;
+  z-index: 2;
+  position: relative;
+}
+
+.login-left h1 {
+  font-size: 36px;
+  margin-bottom: 10px;
+  color: #ff6600; /* Orange */
+}
+
+.login-left p {
+  font-size: 16px;
+  opacity: 0.9;
+  color: #ccc;
+}
+
+.login-left .site-link {
+  position: absolute;
+  bottom: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  color: #fff;
+  z-index: 2;
+}
+
+/* Floating Circles */
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite alternate;
+  opacity: 0.8;
+}
+
+.circle1 {
+  width: 120px;
+  height: 120px;
+  top: 15%;
+  left: 20%;
+  background: radial-gradient(circle, #ff6600, rgba(255, 255, 255, 0.1));
+}
+
+.circle2 {
+  width: 180px;
+  height: 180px;
+  bottom: 20%;
+  right: 15%;
+  background: radial-gradient(circle, #ff3300, rgba(0, 0, 0, 0.5));
+}
+
+.circle3 {
+  width: 90px;
+  height: 90px;
+  top: 40%;
+  right: 25%;
+  background: radial-gradient(circle, #ff9900, rgba(0, 0, 0, 0.4));
+}
+
+/* Floating Animation */
+@keyframes float {
+  from {
+    transform: translateY(0px);
+  }
+  to {
+    transform: translateY(-20px);
+  }
+}
+
+/* Right Section */
+.login-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+}
+
+.form-box {
+  width: 80%;
+  max-width: 380px;
+}
+
+.form-box h3 {
+  font-size: 20px;
+  margin: 0;
+  color: #222;
+}
+
+.form-box h4 {
+  font-size: 18px;
+  color: #ff6600;
+  margin: 5px 0;
+}
+
+.form-box .login-text {
+  color: #444;
+  font-weight: bold;
+}
+
+/* Input Fields */
+.input-box {
+  margin: 15px 0;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-bottom: 2px solid #bbb;
+  font-size: 14px;
+  outline: none;
+  transition: 0.3s;
+  background: transparent;
+}
+
+.input-box input:focus {
+  border-bottom: 2px solid #ff6600;
+}
+
+/* Options */
+.options {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin: 10px 0 20px;
+}
+
+.options label {
+  color: #444;
+}
+
+.options .forgot {
+  text-decoration: none;
+  color: #ff6600;
+  font-weight: 500;
+}
+
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  background: #ff6600;
+  color: #fff;
+  padding: 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.submit-btn:hover {
+  background: #cc5200;
+}
+
+/* Create Account */
+.create-account {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.create-account a {
+  text-decoration: none;
+  color: #444;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.create-account a:hover {
+  color: #ff6600;
+}

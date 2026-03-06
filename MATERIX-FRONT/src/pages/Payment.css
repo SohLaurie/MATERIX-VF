@@ -1,0 +1,156 @@
+.payment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s ease-in-out;
+}
+
+.payment-modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.payment-modal {
+  background: #fff;
+  width: 400px;
+  max-width: 90%;
+  padding: 20px;
+  border-radius: 12px;
+  position: relative;
+  font-family: Arial, sans-serif;
+}
+
+.close-payment {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.payment-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #ddd;
+  padding: 10px;
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  background: white;
+  color: black;
+}
+
+.payment-option.selected {
+  border-color: orange;
+  background: #fff3e0;
+}
+
+.payment-option-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-icon {
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+.payment-fee {
+  font-size: 12px;
+  color: green;
+}
+
+.payment-total {
+  margin: 15px 0;
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+.next-btn, .back-btn, .pay-now-btn, .continue-shopping-btn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: orange;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.back-btn {
+  background: #ccc;
+  color: #333;
+}
+
+.payment-form .form-group {
+  margin-bottom: 15px;
+}
+
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  background: #f9fafc;               /* soft background */
+  border: 1px solid #d1d9e6;         /* light border */
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.input-with-icon input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 12px;
+  margin-left: 8px;
+  font-size: 0.95rem;
+  background: transparent;
+  color: #333;
+}
+
+.input-with-icon:focus-within {
+  border-color: #007bff;            /* highlight border on focus */
+  box-shadow: 0 0 6px rgba(0, 123, 255, 0.25); /* subtle glow */
+  background: #fff;
+}
+
+.input-with-icon svg {
+  color: #007bff; /* icon in theme color */
+  font-size: 1.1rem;
+}
+
+.security-notice {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: gray;
+  margin: 10px 0;
+}
+
+.payment-confirmation {
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 50px;
+  color: green;
+  margin-bottom: 10px;
+}
+
+.payment-code {
+  margin: 10px 0;
+  font-weight: bold;
+}

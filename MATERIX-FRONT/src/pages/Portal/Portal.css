@@ -1,0 +1,251 @@
+.portal-container {
+  font-family: Arial, sans-serif;
+  background-color: #f8f8f8;
+  min-height: 100vh;
+}
+
+/* Navbar */
+.navbar {
+  background-color: white;
+  padding: 0.8rem 1.5rem;
+  border-bottom: 2px solid #eee;
+  z-index: 50;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: orange;
+  flex-shrink: 0;
+}
+
+
+/* .filter_bars {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    max-height: 200px;
+    background-color: #000;
+    backdrop-filter: blur(10px);
+    padding: 15px 0;
+    padding-left: 50%;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+} 
+.filter_bars select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}*/
+
+.search-bar {
+  padding: 12px 45px 12px 15px;
+  border: 2px solid #e5e7eb;
+  border-radius: 25px;
+  width: 300px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  margin-right: -250px;
+}
+
+
+select{
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+#selectcat{
+  margin-right: -300px;
+}
+
+
+/* Technicians Grid */
+.technicians-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.tech-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  border: 1px solid #eee;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease;
+}
+
+.tech-card:hover {
+  transform: translateY(-5px);
+}
+
+.tech-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.specialty {
+  font-weight: bold;
+  color: #555;
+  margin: 0.5rem 0;
+}
+
+.rating {
+  color: orange;
+  font-weight: bold;
+}
+
+.availability {
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin: 0.4rem 0;
+}
+
+.availability.available {
+  color: green;
+}
+
+.availability.unavailable {
+  color: red;
+}
+
+.location {
+  color: #777;
+  font-size: 0.85rem;
+}
+
+.contact-btn {
+  background-color: orange;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.3s;
+}
+
+.contact-btn:hover {
+  background-color: #e69500;
+}
+/* Existing styles kept as before */
+
+/* Overlay backdrop */
+.overlay-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+  z-index: 100;
+}
+
+/* Slide-in panel */
+.overlay-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 35%;
+  max-width: 400px;
+  height: 100%;
+  background-color: white;
+  box-shadow: -3px 0 10px rgba(0,0,0,0.1);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.3s ease-out forwards;
+  padding: 1rem;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Overlay header */
+.overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.8rem;
+}
+
+.overlay-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.overlay-header h2 {
+  margin: 0;
+}
+
+.overlay-location {
+  font-size: 0.9rem;
+  color: #777;
+}
+
+.close-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+/* Form styles */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+}
+
+.contact-form label {
+  font-weight: bold;
+  margin-top: 0.5rem;
+  color: #555;
+}
+
+.contact-form input,
+.contact-form select,
+.contact-form textarea {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-top: 0.3rem;
+}
+
+.send-btn {
+  background-color: orange;
+  color: white;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.send-btn:hover {
+  background-color: #e69500;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: white;
+  color: green;
+  border: 1px solid green;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 200;
+}

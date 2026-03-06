@@ -1,0 +1,13 @@
+.error-text{
+    font-weight: bold;
+    font-size: 55px;
+    position: absolute;
+    top: 30vh;
+    left: 40%;
+
+}
+
+.error-image{
+    position: absolute;
+    top: 10vh;
+}

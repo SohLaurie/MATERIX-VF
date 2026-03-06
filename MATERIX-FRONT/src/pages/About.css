@@ -1,0 +1,116 @@
+.about-section-container {
+  background-color: #0f0f0f;
+  color: white;
+  padding: 6vh 5vw;
+  padding-top: 100px;
+  min-height: 100vh;
+  font-family: 'Roboto', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Hero Banner */
+.about-hero-banner {
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('../assets/images/newback1.jpg');
+  background-size: cover;
+  background-position: center;
+  height: 40vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.about-title {
+  font-size: 3rem;
+  color: orange;
+  font-weight: bold;
+  text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Main Content */
+.about-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  padding: 60px 0;
+}
+
+.about-text {
+  flex: 1;
+  min-width: 300px;
+}
+
+.about-text h2 {
+  font-size: 2rem;
+  color: orange;
+  margin-bottom: 20px;
+}
+
+.about-text p {
+  font-size: 1.1rem;
+  color: #ccc;
+  line-height: 1.7;
+}
+
+.about-image {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  justify-content: center;
+}
+
+.about-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(255, 165, 0, 0.2);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .about-title {
+    font-size: 2.2rem;
+  }
+
+  .about-content {
+    flex-direction: column;
+    padding: 40px 0;
+  }
+
+  .about-text h2 {
+    font-size: 1.6rem;
+  }
+
+  .about-text p {
+    font-size: 1rem;
+  }
+}
+
+/*Mission section stylings*/
+.mission-section {
+  background-color: #1a1a1a;
+  padding: 60px 30px;
+  border-radius: 12px;
+  margin: 50px auto;
+  max-width: 1000px;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(255, 165, 0, 0.1);
+}
+
+.mission-title {
+  font-size: 2.2rem;
+  color: orange;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.mission-text {
+  font-size: 1.1rem;
+  color: #ccc;
+  line-height: 1.7;
+  max-width: 800px;
+  margin: 0 auto;
+}
+

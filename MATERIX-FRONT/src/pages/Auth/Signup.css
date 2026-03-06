@@ -1,0 +1,251 @@
+/* Center the signup container */
+/* body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #f2f2f2;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+} */
+
+/* Container Layout */
+/* Container Layout */
+.signup-container {
+  display: flex;
+  width: 850px;
+  height: 620px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: #fff;
+}
+
+/* Left Section */
+.signup-left {
+  flex: 1;
+  background: linear-gradient(135deg, #000000, #333333);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.signup-left .overlay {
+  text-align: center;
+  z-index: 2;
+  position: relative;
+}
+
+.signup-left h1 {
+  font-size: 36px;
+  margin-bottom: 10px;
+  color: #ff6600;
+}
+
+.signup-left p {
+  font-size: 14px;
+  opacity: 0.9;
+  color: #ccc;
+}
+
+.signup-left .site-link {
+  position: absolute;
+  bottom: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #fff;
+  z-index: 2;
+}
+
+/* Floating Circles */
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite alternate;
+  opacity: 0.8;
+}
+
+.circle1 {
+  width: 100px;
+  height: 100px;
+  top: 15%;
+  left: 20%;
+  background: radial-gradient(circle, #ff6600, rgba(255, 255, 255, 0.1));
+}
+
+.circle2 {
+  width: 140px;
+  height: 140px;
+  bottom: 20%;
+  right: 15%;
+  background: radial-gradient(circle, #ff3300, rgba(0, 0, 0, 0.5));
+}
+
+.circle3 {
+  width: 70px;
+  height: 70px;
+  top: 40%;
+  right: 25%;
+  background: radial-gradient(circle, #ff9900, rgba(0, 0, 0, 0.4));
+}
+
+/* Floating Animation */
+@keyframes float {
+  from {
+    transform: translateY(0px);
+  }
+  to {
+    transform: translateY(-20px);
+  }
+}
+
+/* Right Section */
+.signup-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+}
+
+.form-box {
+  width: 80%;
+  max-width: 320px;
+}
+
+.form-box h3 {
+  font-size: 20px;
+  margin: 0;
+  color: #222;
+}
+
+.form-box h4 {
+  font-size: 18px;
+  color: #ff6600;
+  margin: 5px 0;
+}
+
+.form-box p {
+  font-size: 14px;
+  color: #555;
+}
+
+/* Input Fields */
+.input-box {
+  margin: 12px 0;
+  position: relative;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-bottom: 2px solid #bbb;
+  font-size: 14px;
+  outline: none;
+  transition: 0.3s;
+  background: transparent;
+}
+
+.input-box input:focus {
+  border-bottom: 2px solid #ff6600;
+}
+
+/* Password wrapper for toggle icon */
+.password-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.password-strength {
+  font-size: 12px;
+  margin-top: 4px;
+  display: block; /* ensures it stays below the input */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+  transition: 0.3s;
+}
+
+.toggle-password:hover {
+  color: #ff6600;
+}
+
+/* Password strength colors */
+.password-strength.weak {
+  color: red;
+}
+
+.password-strength.medium {
+  color: orange;
+}
+
+.password-strength.strong {
+  color: green;
+}
+
+/* Options */
+.options {
+  font-size: 13px;
+  margin: 8px 0 15px;
+}
+
+.options label {
+  color: #444;
+}
+
+.policy-link {
+  color: #ff6600;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.policy-link:hover {
+  text-decoration: underline;
+}
+
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  background: #ff6600;
+  color: #fff;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.submit-btn:hover {
+  background: #cc5200;
+}
+
+/* Account Link */
+.account-link {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #444;
+}
+
+.account-link a {
+  text-decoration: none;
+  color: #ff6600;
+  font-weight: 500;
+}
+
+.account-link a:hover {
+  text-decoration: underline;
+}

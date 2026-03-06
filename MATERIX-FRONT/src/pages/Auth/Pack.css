@@ -1,0 +1,108 @@
+.pack-container {
+  text-align: center;
+  padding: 50px 20px;
+  background: #f9f9f9;
+}
+
+.pack-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 10px;
+}
+
+.pack-subtitle {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 40px;
+}
+
+.pricing-cards {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.pricing-card {
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 30px 20px;
+  width: 300px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.plan-name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #ff6600; /* orange theme */
+  margin-bottom: 10px;
+}
+
+.plan-price {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 15px;
+}
+
+.trial-note {
+  font-size: 0.9rem;
+  color: #777;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.plan-features li {
+  font-size: 1rem;
+  color: #444;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+#btn1{
+  margin-top: 140px;
+}
+
+.plan-btn {
+  background: #ff6600; /* orange */
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.3s ease;
+}
+
+.plan-btn:hover {
+  background: #e65500;
+}
+
+/* Premium plan styling */
+.premium {
+  border: 2px solid #ff6600;
+  background: #fffaf5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pricing-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+}
