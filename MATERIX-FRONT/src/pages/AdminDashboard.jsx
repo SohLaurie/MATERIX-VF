@@ -1800,7 +1800,7 @@ function SettingsTab() {
       </div>
 
       {/* General */}
-      <div className="adm-card" style={{ padding: "1.5rem" }}>
+      <div className="adm-card" style={{ width:'120%', padding: "1.5rem" }}>
         <div className="adm-settings-icon-row">
           <Globe size={17} style={{ color: "#f59e0b" }} />
           <h2 className="adm-settings-card-title">General</h2>
@@ -1826,7 +1826,7 @@ function SettingsTab() {
       </div>
 
       {/* Security & 2FA */}
-      <div className="adm-card" style={{ padding: "1.5rem" }}>
+      <div className="adm-card" style={{ width:'120%', padding: "1.5rem" }}>
         <div className="adm-settings-icon-row">
           <Shield size={17} style={{ color: "#f59e0b" }} />
           <h2 className="adm-settings-card-title">Security &amp; Two-Factor Authentication</h2>
@@ -1988,8 +1988,15 @@ export default function AdminDashboard() {
             <span className="adm-logo">MATERIX</span>
             <nav>
               <ul className="adm-nav-links">
-                {["Home", "Our Products", "Our Services", "About"].map(n => (
-                  <li key={n}><a href="/">{n}</a></li>
+                {[
+                  { label: "Home", href: "/" },
+                  { label: "Our Products", href: "/#products-section" },
+                  { label: "Our Services", href: "/#services-section" },
+                  { label: "About", href: "/#about-section" }
+                ].map(item => (
+                  <li key={item.label}>
+                    <a href={item.href}>{item.label}</a>
+                  </li>
                 ))}
                 <li><span className="adm-active">Dashboard</span></li>
               </ul>

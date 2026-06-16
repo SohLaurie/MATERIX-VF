@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Camera, Lock, Eye, EyeOff, Save } from 'lucide-react';
+import { Camera, Lock, Eye, EyeOff, Save, User } from 'lucide-react';
 import Navbar from './Navbar';
 import NavbarDel from './Navbar_delivery';
 import previewFallback from '../assets/images/man1.jpg';
+import '../styles/admin-dashboard.css';
 
 const baseUrl = "http://127.0.0.1:8000";
 
@@ -242,182 +243,213 @@ const Profile = () => {
     <div className="bg-[#f8fafc] min-h-screen text-slate-800 flex flex-col">
       <NavbarComponent />
       
-      <main className="flex-grow w-full max-w-5xl mx-auto px-4 py-8 space-y-6">
-        
-        {/* Card 1: Profile Details */}
-        <div className="w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
-          
-          <form onSubmit={handleProfileUpdate} className="space-y-6">
-            
-            {/* Header profile photo section */}
-            <div className="flex items-center gap-6 mb-8">
-              <div className="relative group">
-                <img 
-                  src={previewPic} 
-                  alt="Profile Avatar" 
-                  className="w-24 h-24 rounded-full object-cover bg-slate-100 shadow-sm border border-slate-200"
-                />
-                <label className="absolute bottom-0 right-0 bg-amber-500 hover:bg-amber-600 text-white p-1.5 rounded-full shadow-md cursor-pointer flex items-center justify-center border border-white transition-colors duration-200">
-                  <Camera size={14} />
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleProfilePicChange} 
-                    className="hidden" 
-                  />
-                </label>
-              </div>
-              
-              <div className="flex gap-3">
-                <label className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2 px-4 rounded-lg cursor-pointer shadow-sm transition-all duration-200 border-0 flex items-center justify-center">
-                  Upload New
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleProfilePicChange} 
-                    className="hidden" 
-                  />
-                </label>
-                <button 
-                  type="button" 
-                  onClick={handleDeleteAvatar}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-all duration-200 border-0 cursor-pointer"
-                >
-                  Delete avatar
-                </button>
-              </div>
+      <div className="adm-scope flex-grow">
+        <main className="w-full max-w-5xl mx-auto px-6 py-10 adm-space-5">
+          <div style={{ marginLeft: '1.5rem' , marginBottom: '1.5rem', marginTop: '1.5rem'}}>
+            <h1 className="adm-section-title" style={{ fontWeight: '1200', fontSize: '1.85rem', color: '#111827' }}>My Profile</h1>
+            <p className="adm-section-sub">Manage your profile details and security settings.</p>
+          </div>
+
+          {/* Card 1: Profile Details */}
+          <div className="adm-card" style={{ marginLeft: '3rem', padding: '2rem', width: '110%' }}>
+            <div className="adm-settings-icon-row" style={{ marginBottom: '1.5rem' }}>
+              <User size={18} style={{ color: "#f59e0b" }} />
+              <h2 className="adm-settings-card-title" style={{ fontWeight: '700', fontSize: '1.1rem', color: '#111827' }}>Profile Details</h2>
             </div>
 
-            {/* Form Input fields */}
-            <div className="space-y-6">
+            <form onSubmit={handleProfileUpdate} className="adm-space-4">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Header profile photo section */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ position: 'relative', width: '96px', height: '96px', flexShrink: 0 }}>
+                  <img 
+                    src={previewPic} 
+                    alt="Profile Avatar" 
+                    style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover' }}
+                    className="bg-slate-100 shadow-sm border border-slate-200"
+                  />
+                  <label 
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      backgroundColor: '#f59e0b',
+                      color: 'white',
+                      padding: '6px',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '2px solid white',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                    title="Upload Avatar"
+                  >
+                    <Camera size={14} />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleProfilePicChange} 
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <label className="adm-btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', borderRadius: '0.5rem' }}>
+                    Upload New
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleProfilePicChange} 
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={handleDeleteAvatar}
+                    className="adm-btn-secondary"
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', borderRadius: '0.5rem' }}
+                  >
+                    Delete avatar
+                  </button>
+                </div>
+              </div>
+
+              {/* Form Input fields */}
+              <div className="adm-grid-2-sm">
                 {/* First Name */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">First Name <span className="text-red-500">*</span></label>
+                  <label className="adm-field-label">First Name <span style={{ color: '#ef4444' }}>*</span></label>
                   <input 
                     type="text" 
                     required
                     placeholder="First name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none"
+                    className="adm-field-input"
                   />
                 </div>
 
                 {/* Last Name */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Last Name <span className="text-red-500">*</span></label>
+                  <label className="adm-field-label">Last Name <span style={{ color: '#ef4444' }}>*</span></label>
                   <input 
                     type="text" 
                     required
                     placeholder="Last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none"
+                    className="adm-field-input"
                   />
                 </div>
 
                 {/* Email Address */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Email</label>
+                  <label className="adm-field-label">Email</label>
                   <input 
                     type="email" 
                     readOnly
                     placeholder="examples@gmail.com"
                     value={email}
-                    className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-400 py-2.5 px-4 rounded-lg cursor-not-allowed w-full outline-none"
+                    className="adm-field-input"
+                    style={{ cursor: 'not-allowed', opacity: 0.6 }}
                   />
                 </div>
 
                 {/* Mobile Number */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Mobile Number <span className="text-red-500">*</span></label>
+                  <label className="adm-field-label">Mobile Number <span style={{ color: '#ef4444' }}>*</span></label>
                   <input 
                     type="text" 
                     required
                     placeholder="+237 690 123 456"
                     value={mobileNumber}
                     onChange={(e) => setMobileNumber(e.target.value)}
-                    className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none"
+                    className="adm-field-input"
                   />
                 </div>
 
                 {/* Role */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Role</label>
-                  <div className="relative">
-                    <select
-                      disabled
-                      value={role}
-                      className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-400 py-2.5 px-4 rounded-lg w-full outline-none appearance-none cursor-not-allowed"
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="technician">Technician</option>
-                      <option value="delivery">Delivery Agent</option>
-                      <option value="client">Client</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-400">
-                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                    </div>
-                  </div>
+                  <label className="adm-field-label">Role</label>
+                  <select
+                    disabled
+                    value={role}
+                    className="adm-field-input"
+                    style={{ cursor: 'not-allowed', opacity: 0.6 }}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="technician">Technician</option>
+                    <option value="delivery">Delivery Agent</option>
+                    <option value="client">Client</option>
+                  </select>
                 </div>
 
                 {/* Specialty */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Specialty</label>
-                  <div className="relative">
-                    <select
-                      value={specialty}
-                      onChange={(e) => setSpecialty(e.target.value)}
-                      className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none cursor-pointer appearance-none"
-                    >
-                      <option value="">None</option>
-                      <option value="Electrical">Electrical</option>
-                      <option value="Plumbing">Plumbing</option>
-                      <option value="Carpentry">Carpentry</option>
-                      <option value="Masonry">Masonry</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                    </div>
-                  </div>
+                  <label className="adm-field-label">Specialty</label>
+                  <select
+                    value={specialty}
+                    onChange={(e) => setSpecialty(e.target.value)}
+                    className="adm-field-input"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <option value="">None</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Carpentry">Carpentry</option>
+                    <option value="Masonry">Masonry</option>
+                  </select>
                 </div>
 
                 {/* Gender */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Gender</label>
-                  <div className="flex gap-4">
+                  <label className="adm-field-label">Gender</label>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button
                       type="button"
                       onClick={() => setGender('Male')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border transition-all duration-200 text-sm cursor-pointer ${
-                        gender === 'Male'
-                          ? 'border-amber-500 bg-amber-50/20 text-amber-800 font-bold'
-                          : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
-                      }`}
+                      className="adm-btn-secondary"
+                      style={{
+                        flex: 1,
+                        borderColor: gender === 'Male' ? '#f59e0b' : '#e5e7eb',
+                        backgroundColor: gender === 'Male' ? '#fffbeb' : 'transparent',
+                        color: gender === 'Male' ? '#b45309' : '#4b5563'
+                      }}
                     >
-                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                        gender === 'Male' ? 'border-amber-500' : 'border-slate-300'
-                      }`}>
-                        {gender === 'Male' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
-                      </span>
+                      <span style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        border: gender === 'Male' ? '3px solid #f59e0b' : '1px solid #9ca3af',
+                        backgroundColor: gender === 'Male' ? '#f59e0b' : 'transparent',
+                        display: 'inline-block',
+                        marginRight: '6px'
+                      }}></span>
                       Male
                     </button>
                     <button
                       type="button"
                       onClick={() => setGender('Female')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border transition-all duration-200 text-sm cursor-pointer ${
-                        gender === 'Female'
-                          ? 'border-amber-500 bg-amber-50/20 text-amber-800 font-bold'
-                          : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300'
-                      }`}
+                      className="adm-btn-secondary"
+                      style={{
+                        flex: 1,
+                        borderColor: gender === 'Female' ? '#f59e0b' : '#e5e7eb',
+                        backgroundColor: gender === 'Female' ? '#fffbeb' : 'transparent',
+                        color: gender === 'Female' ? '#b45309' : '#4b5563'
+                      }}
                     >
-                      <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                        gender === 'Female' ? 'border-amber-500' : 'border-slate-300'
-                      }`}>
-                        {gender === 'Female' && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />}
-                      </span>
+                      <span style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        border: gender === 'Female' ? '3px solid #f59e0b' : '1px solid #9ca3af',
+                        backgroundColor: gender === 'Female' ? '#f59e0b' : 'transparent',
+                        display: 'inline-block',
+                        marginRight: '6px'
+                      }}></span>
                       Female
                     </button>
                   </div>
@@ -425,104 +457,131 @@ const Profile = () => {
 
                 {/* ID */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">ID</label>
+                  <label className="adm-field-label">ID</label>
                   <input 
                     type="text" 
                     readOnly
                     placeholder="USR-1024"
                     value={displayId}
-                    className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-400 py-2.5 px-4 rounded-lg cursor-not-allowed w-full outline-none"
+                    className="adm-field-input"
+                    style={{ cursor: 'not-allowed', opacity: 0.6 }}
                   />
                 </div>
 
+                {/* CNI Number */}
+                <div>
+                  <label className="adm-field-label">CNI Number</label>
+                  <input 
+                    type="text" 
+                    readOnly={role !== 'admin'}
+                    placeholder="National Identity Card Number"
+                    value={cniNumber}
+                    onChange={(e) => setCniNumber(e.target.value)}
+                    className="adm-field-input"
+                    style={{
+                      cursor: role !== 'admin' ? 'not-allowed' : 'text',
+                      opacity: role !== 'admin' ? 0.6 : 1
+                    }}
+                  />
+                </div>
+
+                {/* Empty column */}
+                <div></div>
+
                 {/* Residential Address */}
-                <div className="md:col-span-2">
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Residential Address</label>
+                <div className="adm-col-span-2">
+                  <label className="adm-field-label">Residential Address</label>
                   <input 
                     type="text"
                     placeholder="12 Rue Bonanjo, Douala, Cameroon"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none"
+                    className="adm-field-input"
                   />
                 </div>
 
                 {/* Bio */}
-                <div className="md:col-span-2">
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Bio</label>
+                <div className="adm-col-span-2">
+                  <label className="adm-field-label">Bio</label>
                   <textarea 
                     rows="3" 
                     placeholder="Senior electrical technician with 8+ years of field experience."
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none resize-none"
+                    className="adm-field-input"
+                    style={{ resize: 'none', fontFamily: 'inherit' }}
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Status messages */}
-            {message && msgType === 'success' && !passSaving && (
-              <div className="p-4 rounded-xl text-sm font-medium border bg-emerald-50 border-emerald-200 text-emerald-800">
-                {message}
-              </div>
-            )}
-            {message && msgType === 'error' && !passSaving && (
-              <div className="p-4 rounded-xl text-sm font-medium border bg-rose-50 border-rose-200 text-rose-800">
-                {message}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="flex justify-start pt-2">
-              <button 
-                type="submit" 
-                disabled={saving}
-                className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-bold py-2.5 px-5 rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-2 border-0 cursor-pointer"
-              >
-                {saving ? (
-                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Save size={16} />
-                    Save Changes
-                  </>
+              {/* Status messages & Submit Button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.25rem' }}>
+                <button 
+                  type="submit" 
+                  disabled={saving}
+                  className="adm-btn-save"
+                  style={{ display: 'inline-flex', gap: '0.5rem', width: 'auto' }}
+                >
+                  {saving ? (
+                    <span className="adm-spinner" />
+                  ) : (
+                    <>
+                      <Save size={16} />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+                {message && msgType === 'success' && !passSaving && (
+                  <span className="adm-saved-toast" style={{ color: '#10b981', fontSize: '0.875rem', fontWeight: 600 }}>Profile updated successfully!</span>
                 )}
-              </button>
+                {message && msgType === 'error' && !passSaving && (
+                  <span className="adm-saved-toast" style={{ color: '#ef4444', fontSize: '0.875rem', fontWeight: 600 }}>{message}</span>
+                )}
+              </div>
+
+            </form>
+          </div>
+
+          {/* Card 2: Change Password */}
+          <div className="adm-card" style={{ marginLeft: '3rem', padding: '2rem', width: '110%' }}>
+            <div className="adm-settings-icon-row" style={{ marginBottom: '1.5rem' }}>
+              <Lock size={18} style={{ color: "#f59e0b" }} />
+              <h2 className="adm-settings-card-title" style={{ fontWeight: '700', fontSize: '1.1rem', color: '#111827' }}>Change Password</h2>
             </div>
+            <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '-0.5rem', marginBottom: '1.5rem' }}>
+              Use a strong password you do not reuse elsewhere.
+            </p>
 
-          </form>
-        </div>
-
-        {/* Card 2: Change Password */}
-        <div className="w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
-          <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <Lock size={18} className="text-amber-500" />
-              <h3 className="text-lg font-bold text-slate-900">Change Password</h3>
-            </div>
-            <p className="text-xs text-slate-500 -mt-4">Use a strong password you do not reuse elsewhere.</p>
-
-            <form onSubmit={handlePasswordUpdate} className="space-y-6">
+            <form onSubmit={handlePasswordUpdate} className="adm-space-4">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="adm-grid-2-sm">
                 {/* Current Password (ONLY rendered if role is NOT admin) */}
                 {!isAdmin && (
-                  <div className="md:col-span-2 max-w-md">
-                    <label className="block text-slate-800 text-sm font-semibold mb-1.5">Current Password <span className="text-red-500">*</span></label>
-                    <div className="relative flex items-center">
+                  <div className="adm-col-span-2" style={{ maxWidth: 480 }}>
+                    <label className="adm-field-label">Current Password <span style={{ color: '#ef4444' }}>*</span></label>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <input 
-                        type={showCurrent ? "text" : "password"}
+                        type={showCurrent ? 'text' : 'password'}
                         required
                         placeholder="Enter current password"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 pr-10 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none"
+                        className="adm-field-input"
+                        style={{ paddingRight: '2.5rem' }}
                       />
                       <button 
                         type="button" 
                         onClick={() => setShowCurrent(!showCurrent)}
-                        className="absolute right-3 text-slate-400 hover:text-slate-600 cursor-pointer flex items-center"
+                        style={{
+                          position: 'absolute',
+                          right: '0.75rem',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          color: '#6b7280'
+                        }}
                       >
                         {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -532,20 +591,30 @@ const Profile = () => {
 
                 {/* New Password */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">New Password <span className="text-red-500">*</span></label>
-                  <div className="relative flex items-center">
+                  <label className="adm-field-label">New Password <span style={{ color: '#ef4444' }}>*</span></label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <input 
-                      type={showNew ? "text" : "password"}
+                      type={showNew ? 'text' : 'password'}
                       required
                       placeholder="Min 8 characters"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 pr-10 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none"
+                      className="adm-field-input"
+                      style={{ paddingRight: '2.5rem' }}
                     />
                     <button 
                       type="button" 
                       onClick={() => setShowNew(!showNew)}
-                      className="absolute right-3 text-slate-400 hover:text-slate-600 cursor-pointer flex items-center"
+                      style={{
+                        position: 'absolute',
+                        right: '0.75rem',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: '#6b7280'
+                      }}
                     >
                       {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -554,20 +623,30 @@ const Profile = () => {
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-semibold mb-1.5">Confirm New Password <span className="text-red-500">*</span></label>
-                  <div className="relative flex items-center">
+                  <label className="adm-field-label">Confirm New Password <span style={{ color: '#ef4444' }}>*</span></label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <input 
-                      type={showConfirm ? "text" : "password"}
+                      type={showConfirm ? 'text' : 'password'}
                       required
                       placeholder="Re-enter new password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="bg-[#f3f4f6]/80 border border-slate-200 text-slate-700 py-2.5 px-4 pr-10 rounded-lg focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all w-full outline-none"
+                      className="adm-field-input"
+                      style={{ paddingRight: '2.5rem' }}
                     />
                     <button 
                       type="button" 
                       onClick={() => setShowConfirm(!showConfirm)}
-                      className="absolute right-3 text-slate-400 hover:text-slate-600 cursor-pointer flex items-center"
+                      style={{
+                        position: 'absolute',
+                        right: '0.75rem',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: '#6b7280'
+                      }}
                     >
                       {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -575,26 +654,16 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Status messages for password */}
-              {message && passSaving && (
-                <div className={`p-4 rounded-xl text-sm font-medium border ${
-                  msgType === 'success' 
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
-                    : 'bg-rose-50 border-rose-200 text-rose-800'
-                }`}>
-                  {message}
-                </div>
-              )}
-
-              {/* Password Buttons */}
-              <div className="flex gap-4 pt-2">
+              {/* Status messages for password & Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1rem' }}>
                 <button 
                   type="submit" 
                   disabled={passSaving}
-                  className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-bold py-2.5 px-5 rounded-lg shadow-sm transition-all duration-200 flex items-center justify-center gap-2 border-0 cursor-pointer"
+                  className="adm-btn-save"
+                  style={{ display: 'inline-flex', gap: '0.5rem', width: 'auto' }}
                 >
                   {passSaving ? (
-                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="adm-spinner" />
                   ) : (
                     <>
                       <Save size={16} />
@@ -605,16 +674,19 @@ const Profile = () => {
                 <button 
                   type="button" 
                   onClick={handleCancelPassword}
-                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 px-5 rounded-lg transition-colors border-0 cursor-pointer"
+                  className="adm-btn-secondary"
                 >
                   Cancel
                 </button>
+                {message && passSaving && (
+                  <span className="adm-saved-toast" style={{ color: msgType === 'success' ? '#10b981' : '#ef4444', fontSize: '0.875rem', fontWeight: 600 }}>{message}</span>
+                )}
               </div>
 
             </form>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

@@ -1,118 +1,17 @@
-// import React, { useState, useEffect } from 'react';
-// import './Navbar.css';
-// import { useNavigate, useLocation } from 'react-router-dom';
-
-// const sections = [
-//   { id: 'home', label: 'Home', type: 'hash' },
-//   { id: 'products-section', label: 'Our Products', type: 'hash' },
-//   { id: 'services-section', label: 'Our Services', type: 'hash' },
-//   { id: 'about-section', label: 'About', type: 'hash' },
-//   { id: '/techdash', label: 'Dashboard', type: 'route' }
-// ];
-
-// const NavbarDel = () => {
-//   const [activeSection, setActiveSection] = useState('home');
-//   const [dropdownOpen, setDropdownOpen] = useState(false);
-//   const navigate = useNavigate();
-//   const location = useLocation();
-
-//   useEffect(() => {
-//     const handleScroll = () => {
-//       const scrollPosition = window.scrollY + 150;
-//       let current = 'home';
-//       sections.forEach((section) => {
-//         if (section.type === 'hash') {
-//           const element = document.getElementById(section.id);
-//           if (element && scrollPosition >= element.offsetTop) {
-//             current = section.id;
-//           }
-//         }
-//       });
-//       setActiveSection(current);
-//     };
-
-//     window.addEventListener('scroll', handleScroll, { passive: true });
-//     handleScroll();
-//     return () => window.removeEventListener('scroll', handleScroll);
-//   }, []);
-
-//   const handleClick = (section) => {
-//     if (section.type === 'route') {
-//       navigate(section.id); // Navigate to /techdash
-//     } else {
-//       if (location.pathname !== '/') {
-//         navigate(`/#${section.id}`);
-//       } else {
-//         window.location.hash = section.id;
-//       }
-//     }
-//     setActiveSection(section.id);
-//   };
-
-//   const toggleDropdown = () => {
-//     setDropdownOpen(!dropdownOpen);
-//   };
-
-//   const handleDropdownNavigation = (path) => {
-//     navigate(path);
-//     setDropdownOpen(false);
-//   };
-
-//   return (
-//     <nav className="navbar">
-//       <div className="navbar-logo">MATERIX</div>
-      
-//       <div className="navbar-icons">
-//       <div className="admin-profile">
-//         <img 
-//           src="../assets/man1.jpg"
-//           alt="Admin Profile" 
-//           className="profile-pic" 
-//           // onError={(e) => e.target.src = lifelineLogo}
-//         />
-//         <span className="admin-name">Laura Mayer</span>
-//       </div>
-  
-//         <div className="user-dropdown">
-//           <i className="fas fa-user" onClick={toggleDropdown}></i>
-//           {dropdownOpen && (
-//             <ul className="dropdown-menu">
-//               <li onClick={() => handleDropdownNavigation('/login')}>
-//                 <i className="fas fa-sign-out-alt"></i> Logout
-//               </li>
-//               <li onClick={() => handleDropdownNavigation('/profile')}>
-//                 <i className="fas fa-user"></i> Profile
-//               </li>
-//             </ul>
-//           )}
-//         </div>
-//       </div>
-//     </nav>
-//   );
-// };
-
-// export default NavbarDel;
-
-
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Navbar.css';
-import { useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import defaultPic from '../assets/images/default.png';
-
+import { User, ChevronDown, LogOut, LogIn } from 'lucide-react';
 
 const NavbarDel = () => {
-
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [username, setUsername] = useState(localStorage.getItem('username') || 'Guest');
   const [profilePic, setProfilePic] = useState(localStorage.getItem('profile_picture') || defaultPic);
   const [role, setRole] = useState(localStorage.getItem('role') || '');
 
   const navigate = useNavigate();
-
-
-  
+  const userRef = useRef(null);
 
   // Refresh navbar info when localStorage changes (profile update)
   useEffect(() => {
@@ -125,18 +24,6 @@ const NavbarDel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleClick = (section) => {
-    if (section.type === 'route') {
-      navigate(section.id);
-    } else {
-      if (location.pathname !== '/') {
-        navigate(`/#${section.id}`);
-      } else {
-        window.location.hash = section.id;
-      }
-    }
-  };
-
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
@@ -147,6 +34,8 @@ const NavbarDel = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
     localStorage.removeItem('username');
     localStorage.removeItem('profile_picture');
     localStorage.removeItem('role');
@@ -157,40 +46,52 @@ const NavbarDel = () => {
     navigate('/login');
   };
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userRef.current && !userRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <nav className="navbar">
-      <a href="/deldash">
-        <div className="navbar-logo">MATERIX</div>
-      </a>        
+      <div className="navbar-inner">
+        <span className="navbar-logo" onClick={() => navigate('/deldash')}>MATERIX</span>
         
-      <div className="navbar-icons">
-        <div className="admin-profile">
-          <img
-            src={profilePic && profilePic !== "" ? profilePic : defaultPic}
-            alt="Profile"
-            className="profile-pic"
-          />
-          <span className="admin-name">{username}</span>
-        </div>
-
-        <div className="user-dropdown">
-          <i className="fas fa-user" onClick={toggleDropdown}></i>
-          {dropdownOpen && (
-            <ul className="dropdown-menu">
-              {username && username !== 'Guest' ? (
-                <li onClick={handleLogout}>
-                  <i className="fas fa-sign-out-alt"></i> Logout
-                </li>
+        <div className="navbar-icons">
+          {/* Profile Dropdown Chip */}
+          <div className="user-chip" ref={userRef} onClick={toggleDropdown}>
+            <div className="user-avatar">
+              {profilePic ? (
+                <img src={profilePic} alt="Profile" />
               ) : (
-                <li onClick={() => handleDropdownNavigation('/login')}>
-                  <i className="fas fa-sign-in-alt"></i> Login
-                </li>
+                <User size={14} />
               )}
-              <li onClick={() => handleDropdownNavigation('/profile')}>
-                <i className="fas fa-user"></i> Profile
-              </li>
-            </ul>
-          )}
+            </div>
+            <span>{username}</span>
+            <ChevronDown size={14} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+
+            {dropdownOpen && (
+              <ul className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                {username && username !== 'Guest' ? (
+                  <li onClick={handleLogout} className="logout-item">
+                    <LogOut size={14} /> Logout
+                  </li>
+                ) : (
+                  <li onClick={() => handleDropdownNavigation('/login')}>
+                    <LogIn size={14} /> Login
+                  </li>
+                )}
+                <li onClick={() => handleDropdownNavigation('/profile')}>
+                  <User size={14} /> Profile
+                </li>
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </nav>

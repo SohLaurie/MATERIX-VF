@@ -1,177 +1,9 @@
-// import React, { useState, useEffect } from 'react';
-// import './Navbar.css';
-// import { useNavigate, useLocation } from 'react-router-dom';
-// import defaultPic from '../assets/images/default.png';
-
-
-// const baseSections = [
-//   { id: 'home', label: 'Home', type: 'hash' },
-//   { id: 'products-section', label: 'Our Products', type: 'hash' },
-//   { id: 'services-section', label: 'Our Services', type: 'hash' },
-//   { id: 'about-section', label: 'About', type: 'hash' },
-//   // Dashboard will be added dynamically if technician
-// ];
-
-// const Navbar = () => {
-//   const [activeSection, setActiveSection] = useState('home');
-//   const [dropdownOpen, setDropdownOpen] = useState(false);
-//   const [username, setUsername] = useState(localStorage.getItem('username') || 'Guest');
-//   const [profilePic, setProfilePic] = useState(localStorage.getItem('profile_picture') || defaultPic);
-//   const [role, setRole] = useState(localStorage.getItem('role') || '');
-
-//   const navigate = useNavigate();
-//   const location = useLocation();
-
-//   // Build final sections depending on role
-//   const sections = [...baseSections];
-//   if (role === 'technician') {
-//     sections.push({ id: '/techdash', label: 'Dashboard', type: 'route' });
-//   }
-
-//   // Highlight active section on scroll (for hash sections)
-//   useEffect(() => {
-//     const handleScroll = () => {
-//       const scrollPosition = window.scrollY + 150;
-//       let current = 'home';
-//       sections.forEach((section) => {
-//         if (section.type === 'hash') {
-//           const element = document.getElementById(section.id);
-//           if (element && scrollPosition >= element.offsetTop) {
-//             current = section.id;
-//           }
-//         }
-//       });
-//       setActiveSection(current);
-//     };
-
-//     window.addEventListener('scroll', handleScroll, { passive: true });
-//     handleScroll();
-//     return () => window.removeEventListener('scroll', handleScroll);
-//   }, [sections]);
-
-//   // Refresh navbar info when localStorage changes (profile update)
-//   useEffect(() => {
-//     const interval = setInterval(() => {
-//       setUsername(localStorage.getItem('username') || 'Guest');
-//       setProfilePic(localStorage.getItem('profile_picture') || defaultPic);
-//       setRole(localStorage.getItem('role') || '');
-//     }, 1000);
-
-//     return () => clearInterval(interval);
-//   }, []);
-
-//   // Update active section based on current URL (hash or route)
-//   useEffect(() => {
-//     const path = location.pathname;
-//     const hash = location.hash.replace('#', '');
-
-//     if (path === '/' && hash) {
-//       setActiveSection(hash); // hash-based section
-//     } else if (path === '/') {
-//       setActiveSection('home'); // default home
-//     } else {
-//       const routeSection = sections.find(
-//         (section) => section.type === 'route' && section.id === path
-//       );
-//       if (routeSection) setActiveSection(routeSection.id);
-//     }
-//   }, [location, sections]);
-
-//   const handleClick = (section) => {
-//     if (section.type === 'route') {
-//       navigate(section.id);
-//     } else {
-//       if (location.pathname !== '/') {
-//         navigate(`/#${section.id}`);
-//       } else {
-//         window.location.hash = section.id;
-//       }
-//     }
-//   };
-
-//   const toggleDropdown = () => {
-//     setDropdownOpen(!dropdownOpen);
-//   };
-
-//   const handleDropdownNavigation = (path) => {
-//     navigate(path);
-//     setDropdownOpen(false);
-//   };
-
-//   const handleLogout = () => {
-//     localStorage.removeItem('username');
-//     localStorage.removeItem('profile_picture');
-//     localStorage.removeItem('role');
-//     setUsername('Guest');
-//     setProfilePic(defaultPic);
-//     setRole('');
-//     setDropdownOpen(false);
-//     navigate('/login');
-//   };
-
-//   return (
-//     <nav className="navbar">
-//       <div className="navbar-logo">MATERIX</div>
-//       <ul className="navbar-links">
-//         {sections.map((section) => (
-//           <li key={section.id}>
-//             <a
-//               href={section.type === 'hash' ? `#${section.id}` : section.id}
-//               className={activeSection === section.id ? 'active' : ''}
-//               onClick={(e) => {
-//                 e.preventDefault();
-//                 handleClick(section);
-//               }}
-//             >
-//               {section.label}
-//             </a>
-//           </li>
-//         ))}
-//       </ul>
-//       <div className="navbar-icons">
-//         <div className="admin-profile">
-//           <img
-//             src={profilePic && profilePic !== "" ? profilePic : defaultPic}
-//             alt="Profile"
-//             className="profile-pic"
-//           />
-//           <span className="admin-name">{username}</span>
-//         </div>
-
-//         <div className="user-dropdown">
-//           <i className="fas fa-user" onClick={toggleDropdown}></i>
-//           {dropdownOpen && (
-//             <ul className="dropdown-menu">
-//               {username && username !== 'Guest' ? (
-//                 <li onClick={handleLogout}>
-//                   <i className="fas fa-sign-out-alt"></i> Logout
-//                 </li>
-//               ) : (
-//                 <li onClick={() => handleDropdownNavigation('/login')}>
-//                   <i className="fas fa-sign-in-alt"></i> Login
-//                 </li>
-//               )}
-//               <li onClick={() => handleDropdownNavigation('/pack')}>
-//                 <i className="fas fa-user-plus"></i> Signup
-//               </li>
-//               <li onClick={() => handleDropdownNavigation('/profile')}>
-//                 <i className="fas fa-user"></i> Profile
-//               </li>
-//             </ul>
-//           )}
-//         </div>
-//       </div>
-//     </nav>
-//   );
-// };
-
-// export default Navbar;
-
 import React, { useState, useEffect, useRef } from 'react';
 import './Navbar.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import defaultPic from '../assets/images/default.png';
+import { Bell, User, ChevronDown, LogOut, LogIn, UserPlus, Trash2, Menu, X } from 'lucide-react';
 
 const baseSections = [
   { id: 'home', label: 'Home', type: 'hash' },
@@ -189,19 +21,25 @@ const Navbar = () => {
   
   const [notifications, setNotifications] = useState([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
   const notifRef = useRef(null);
+  const userRef = useRef(null);
 
-  // Build sections dynamically
+  // Build sections dynamically based on user role
   const sections = [...baseSections];
-  if (role === 'technician') {
+  if (role === 'admin') {
+    sections.push({ id: '/admindash', label: 'Dashboard', type: 'route' });
+  } else if (role === 'technician') {
     sections.push({ id: '/techdash', label: 'Dashboard', type: 'route' });
   }
 
-  // Highlight active section on scroll
+  // Highlight active section on scroll for home page hash links
   useEffect(() => {
+    if (location.pathname !== '/') return;
+
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 150;
       let current = 'home';
@@ -219,9 +57,23 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [sections]);
+  }, [sections, location.pathname]);
 
-  // Refresh navbar info every second (profile updates)
+  // Handle smooth scroll on hash changes or direct URL hash loads
+  useEffect(() => {
+    if (location.pathname === '/' && location.hash) {
+      const targetId = location.hash.replace('#', '');
+      const element = document.getElementById(targetId);
+      if (element) {
+        const timer = setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [location.pathname, location.hash]);
+
+  // Refresh navbar info every second (synchronizes profile updates)
   useEffect(() => {
     const interval = setInterval(() => {
       setUsername(localStorage.getItem('username') || 'Guest');
@@ -232,7 +84,7 @@ const Navbar = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Update active section on route change
+  // Update active section on route changes
   useEffect(() => {
     const path = location.pathname;
     const hash = location.hash.replace('#', '');
@@ -247,14 +99,20 @@ const Navbar = () => {
   }, [location, sections]);
 
   const handleClick = (section) => {
-    if (section.type === 'route') navigate(section.id);
-    else {
-      if (location.pathname !== '/') navigate(`/#${section.id}`);
-      else window.location.hash = section.id;
+    if (section.type === 'route') {
+      navigate(section.id);
+    } else {
+      if (location.pathname !== '/') {
+        navigate(`/#${section.id}`);
+      } else {
+        window.location.hash = section.id;
+        const element = document.getElementById(section.id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     }
   };
-
-  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   const handleDropdownNavigation = (path) => {
     navigate(path);
@@ -262,6 +120,8 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('access');
+    localStorage.removeItem('refresh');
     localStorage.removeItem('username');
     localStorage.removeItem('profile_picture');
     localStorage.removeItem('role');
@@ -272,7 +132,7 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  // --- Notifications ---
+  // --- Notifications Fetching & Operations ---
   useEffect(() => {
     const fetchNotifications = async () => {
       const token = localStorage.getItem('access');
@@ -295,7 +155,7 @@ const Navbar = () => {
   
   const unreadCount = notifications.filter(n => !n.is_read).length;
   
-  // Mark all as read (persist to backend)
+  // Mark all notifications as read
   const markAllRead = async () => {
     const token = localStorage.getItem('access');
     if (!token) return;
@@ -339,14 +199,14 @@ const Navbar = () => {
     }
   };
 
-
-
-
-  // Close notification dropdown on outside click
+  // Close dropdowns on outside clicks
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setShowNotifDropdown(false);
+      }
+      if (userRef.current && !userRef.current.contains(event.target)) {
+        setDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -354,92 +214,136 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="navbar">
-      <div className="navbar-logo">MATERIX</div>
-      <ul className="navbar-links">
-        {sections.map((section) => (
-          <li key={section.id}>
-            <a
-              href={section.type === 'hash' ? `#${section.id}` : section.id}
-              className={activeSection === section.id ? 'active' : ''}
-              onClick={(e) => { e.preventDefault(); handleClick(section); }}
-            >
-              {section.label}
-            </a>
-          </li>
-        ))}
-      </ul>
+    <>
+      <nav className="navbar">
+        <div className="navbar-inner">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            <span className="navbar-logo" onClick={() => navigate('/')}>MATERIX</span>
+            <ul className="navbar-links">
+              {sections.map((section) => (
+                <li key={section.id}>
+                  <a
+                    className={activeSection === section.id ? 'active' : ''}
+                    onClick={() => handleClick(section)}
+                  >
+                    {section.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-      <div className="navbar-icons">
-        {/* Notification Dropdown */}
-        <div className="notification-icon" ref={notifRef}>
-          <i className="fas fa-bell" onClick={() => setShowNotifDropdown(!showNotifDropdown)}></i>
-          {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+          <div className="navbar-icons">
+            {/* Notification Dropdown */}
+            <div className="notification-icon" ref={notifRef}>
+              <Bell size={16} onClick={() => setShowNotifDropdown(!showNotifDropdown)} />
+              {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
 
-          {showNotifDropdown && (
-            <div className="notif-dropdown">
-              <div className="notif-header">
-                <span>Notifications</span>
-                {notifications.length > 0 && (
-                  <button className="mark-all-btn" onClick={markAllRead}>Mark all as read</button>
-                )}
-              </div>
-              <div className="notif-content">
-                {notifications.length === 0 ? (
-                  <p className="no-notifs">No notifications</p>
-                ) : (
-                  notifications.map(n => (
-                    <div
-                      key={n.id}
-                      className={`notif-item ${n.is_read ? 'read' : 'unread'}`}
-                    >
-                      <p className="notif-message">{n.message}</p>
-                      <small className="notif-time">{new Date(n.created_at).toLocaleString()}</small>
-                      <button className="delete-btn"
-                        onClick={() => handleDeleteNotification(n.id)}
-                        title="Delete notification"
-                      >
-                        <i className="fas fa-trash"></i>
+              {showNotifDropdown && (
+                <div className="notif-dropdown">
+                  <div className="notif-header">
+                    <span>Notifications</span>
+                    {notifications.length > 0 && (
+                      <button className="mark-all-btn" onClick={markAllRead}>Mark all as read</button>
+                    )}
+                  </div>
+                  <div className="notif-content">
+                    {notifications.length === 0 ? (
+                      <p className="no-notifs">No notifications</p>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n.id}
+                          className={`notif-item ${n.is_read ? 'read' : 'unread'}`}
+                        >
+                          <div className="notif-left">
+                            {!n.is_read && <span className="notif-dot"></span>}
+                            <div className="notif-text">
+                              <p className="notif-message">{n.message}</p>
+                              <small className="notif-time">{new Date(n.created_at).toLocaleString()}</small>
+                            </div>
+                          </div>
+                          <button className="delete-btn"
+                            onClick={() => handleDeleteNotification(n.id)}
+                            title="Delete notification"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {/* Footer with clear all button */}
+                  {notifications.length > 0 && (
+                    <div className="notif-footer">
+                      <button className="clear-all-btn" onClick={handleClearAll}>
+                        <Trash2 size={12} /> Clear All
                       </button>
                     </div>
-                  ))
-                )}
-              </div>
-              {/* Footer with clear all button */}
-              {notifications.length > 0 && (
-                <div className="notif-footer">
-                  <button className="clear-all-btn" onClick={handleClearAll}>
-                    <i className="fas fa-trash-alt"></i> Clear All
-                  </button>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
-        
 
-        {/* Profile Dropdown */}
-        <div className="admin-profile">
-          <img src={profilePic && profilePic !== "" ? profilePic : defaultPic} alt="Profile" className="profile-pic" />
-          <span className="admin-name">{username}</span>
-        </div>
+            {/* Profile Dropdown Chip */}
+            <div className="user-chip" ref={userRef} onClick={() => setDropdownOpen(!dropdownOpen)}>
+              <div className="user-avatar">
+                {profilePic ? (
+                  <img src={profilePic} alt="Profile" />
+                ) : (
+                  <User size={14} />
+                )}
+              </div>
+              <span>{username}</span>
+              <ChevronDown size={14} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
 
-        <div className="user-dropdown">
-          <i className="fas fa-user" onClick={toggleDropdown}></i>
-          {dropdownOpen && (
-            <ul className="dropdown-menu">
-              {username && username !== 'Guest' ? (
-                <li onClick={handleLogout}><i className="fas fa-sign-out-alt"></i> Logout</li>
-              ) : (
-                <li onClick={() => handleDropdownNavigation('/login')}><i className="fas fa-sign-in-alt"></i> Login</li>
+              {dropdownOpen && (
+                <ul className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                  {username && username !== 'Guest' ? (
+                    <li onClick={handleLogout} className="logout-item">
+                      <LogOut size={14} /> Logout
+                    </li>
+                  ) : (
+                    <li onClick={() => handleDropdownNavigation('/login')}>
+                      <LogIn size={14} /> Login
+                    </li>
+                  )}
+                  <li onClick={() => handleDropdownNavigation('/pack')}>
+                    <UserPlus size={14} /> Signup
+                  </li>
+                  <li onClick={() => handleDropdownNavigation('/profile')}>
+                    <User size={14} /> Profile
+                  </li>
+                </ul>
               )}
-              <li onClick={() => handleDropdownNavigation('/pack')}><i className="fas fa-user-plus"></i> Signup</li>
-              <li onClick={() => handleDropdownNavigation('/profile')}><i className="fas fa-user"></i> Profile</li>
-            </ul>
-          )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Mobile Responsive Navigation Links */}
+      {mobileOpen && (
+        <div className="mobile-menu">
+          {sections.map((section) => (
+            <a
+              key={section.id}
+              className={activeSection === section.id ? 'active' : ''}
+              onClick={() => {
+                handleClick(section);
+                setMobileOpen(false);
+              }}
+            >
+              {section.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </>
   );
 };
 

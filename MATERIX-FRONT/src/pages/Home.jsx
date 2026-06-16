@@ -54,7 +54,7 @@ const Home = () => {
         <Ourservis />
       </section>
 
-      <section id="services-section">
+      <section id="about-section">
         {/* Render About Us section */}
         <About />
       </section>
