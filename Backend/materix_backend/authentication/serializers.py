@@ -49,6 +49,9 @@ class UserSerializer(serializers.ModelSerializer):
             'specialty',
             'address',
             'cni_number',
+            'is_active',
+            'date_joined',
+            'profile_picture',
         ]
 
 

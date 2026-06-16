@@ -1,5 +1,6 @@
-/* index.css or Navbar.css */
 @import url('@fortawesome/fontawesome-free/css/all.min.css');
+@import "tailwindcss";
+/* index.css or Navbar.css */
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;

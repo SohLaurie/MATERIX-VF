@@ -1,13 +1,12 @@
 # portal/views.py
-from rest_framework import generics, permissions
-from rest_framework.exceptions import PermissionDenied
+from rest_framework import generics, permissions, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from django.db.models import Q
 from authentication.models import User
 from .models import ServiceRequest
 from .serializers import TechnicianPublicSerializer, ServiceRequestSerializer
 from notifications.models import Notification
-
-
 
 class TechnicianListView(generics.ListAPIView):
     serializer_class = TechnicianPublicSerializer
@@ -38,51 +37,66 @@ class TechnicianListView(generics.ListAPIView):
         return ctx
 
 
-class ServiceRequestCreateView(generics.CreateAPIView):
-    serializer_class = ServiceRequestSerializer
+class ServiceRequestCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def get_serializer_context(self):
-        ctx = super().get_serializer_context()
-        ctx['request'] = self.request
-        return ctx
+    def post(self, request):
+        serializer = ServiceRequestSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class MyServiceRequestsView(generics.ListAPIView):
-    serializer_class = ServiceRequestSerializer
+class MyServiceRequestsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        user = self.request.user
+    def get(self, request):
+        user = request.user
         if user.role == 'technician':
-            return ServiceRequest.objects.filter(technician=user).order_by('-created_at')
-        return ServiceRequest.objects.filter(client=user).order_by('-created_at')
+            requests = ServiceRequest.objects(technician_id=user.id).order_by('-created_at')
+        else:
+            requests = ServiceRequest.objects(client_id=user.id).order_by('-created_at')
+        
+        serializer = ServiceRequestSerializer(requests, many=True, context={"request": request})
+        return Response(serializer.data)
 
 
-class ServiceRequestDetailView(generics.RetrieveUpdateAPIView):
-    queryset = ServiceRequest.objects.all()
-    serializer_class = ServiceRequestSerializer
+class ServiceRequestDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_update(self, serializer):
-        request_obj = self.get_object()
-        user = self.request.user
+    def get(self, request, pk):
+        try:
+            sr = ServiceRequest.objects.get(id=pk)
+            if request.user.id not in (sr.technician_id, sr.client_id) and request.user.role != 'admin':
+                return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+            
+            serializer = ServiceRequestSerializer(sr, context={"request": request})
+            return Response(serializer.data)
+        except Exception:
+            return Response({"error": "Service request not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    def patch(self, request, pk):
+        try:
+            sr = ServiceRequest.objects.get(id=pk)
+        except Exception:
+            return Response({"error": "Service request not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
         # Only the assigned technician can update status
-        if user.role != "technician" or request_obj.technician != user:
-            raise PermissionDenied("You are not allowed to update this request.")
+        if user.role != "technician" or sr.technician_id != user.id:
+            return Response({"error": "You are not allowed to update this request."}, status=status.HTTP_403_FORBIDDEN)
 
-        updated_request = serializer.save()
+        serializer = ServiceRequestSerializer(sr, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            updated_request = serializer.save()
 
-        # Create notification with the new status
-        if updated_request.client:
-            Notification.objects.create(
-                recipient=updated_request.client,
-                request=updated_request,
-                message=f"Your service request '{updated_request.message[:20]}...' has been {updated_request.status} by {user.username}."
-            )
-
-
-    def update(self, request, *args, **kwargs):
-        kwargs['partial'] = True  # ✅ allow PATCH without all fields
-        return super().update(request, *args, **kwargs)
+            # Create notification with the new status
+            if updated_request.client_id:
+                Notification.objects.create(
+                    recipient_id=updated_request.client_id,
+                    request_id=str(updated_request.id),
+                    message=f"Your service request '{updated_request.message[:20]}...' has been {updated_request.status} by {user.username}."
+                )
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

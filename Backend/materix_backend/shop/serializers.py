@@ -1,87 +1,105 @@
 from rest_framework import serializers 
 from .models import Product, Order, OrderItem
 
-
-class ProductSerializer(serializers.ModelSerializer):
+class ProductSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+    name = serializers.CharField()
+    price = serializers.DecimalField(max_digits=10, decimal_places=2)
     final_price = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Product
-        fields = [
-            "id",
-            "name",
-            "price",
-            "final_price",
-            "image",
-            "three_d_path",
-            "mtl_file",
-            "category",
-            "rating",
-            "likes",
-            "description",
-            "in_stock",
-            "discount",
-            "stock",
-        ]
+    image = serializers.SerializerMethodField()
+    three_d_path = serializers.SerializerMethodField()
+    mtl_file = serializers.SerializerMethodField()
+    category = serializers.CharField()
+    rating = serializers.FloatField()
+    likes = serializers.IntegerField()
+    description = serializers.CharField(allow_blank=True, allow_null=True)
+    in_stock = serializers.BooleanField()
+    discount = serializers.IntegerField()
+    stock = serializers.IntegerField()
 
     def get_final_price(self, obj):
         return obj.final_price()
 
+    def get_image(self, obj):
+        if obj.image_url:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.image_url)
+            return obj.image_url
+        return None
 
-class OrderItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source="product.name", read_only=True)
+    def get_three_d_path(self, obj):
+        if obj.three_d_path:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.three_d_path)
+            return obj.three_d_path
+        return None
 
-    class Meta:
-        model = OrderItem
-        fields = [
-            "id",
-            "product",
-            "product_name",
-            "quantity",
-            "price_at_purchase",
-            "get_subtotal",
-        ]
+    def get_mtl_file(self, obj):
+        if obj.mtl_file:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.mtl_file)
+            return obj.mtl_file
+        return None
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class OrderItemSerializer(serializers.Serializer):
+    id = serializers.SerializerMethodField(read_only=True)  # Mock id if frontend expects it
+    product = serializers.CharField(source="product_id")
+    product_name = serializers.CharField(read_only=True)
+    quantity = serializers.IntegerField(default=1)
+    price_at_purchase = serializers.DecimalField(max_digits=10, decimal_places=2)
+    get_subtotal = serializers.SerializerMethodField()
+
+    def get_id(self, obj):
+        return None
+
+    def get_get_subtotal(self, obj):
+        return obj.get_subtotal()
+
+
+class OrderSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+    customer = serializers.IntegerField(source="customer_id", read_only=True)
+    customer_username = serializers.CharField(read_only=True)
+    customer_address = serializers.CharField(read_only=True)
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    status = serializers.CharField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    transaction_id = serializers.CharField(read_only=True)
+    assigned_agent = serializers.CharField(source="assigned_agent_username", read_only=True)
     items = OrderItemSerializer(many=True)
-    assigned_agent = serializers.StringRelatedField(read_only=True)  # show username if assigned
-    customer_username = serializers.CharField(source="customer.username", read_only=True)
-    customer_address = serializers.CharField(source="customer.address", read_only=True)
-
-    class Meta:
-        model = Order
-        fields = [
-            "id",
-            "customer",
-            "customer_username",
-            "customer_address",
-            "total_price",
-            "status",
-            "created_at",
-            "updated_at",
-            "transaction_id",
-            "assigned_agent",  # 👈 added here
-            "items",
-        ]
-        read_only_fields = [
-            "customer",
-            "total_price",
-            "status",
-            "created_at",
-            "updated_at",
-            "transaction_id",
-            "assigned_agent",  # 👈 cannot be set by customer on creation
-        ]
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
-
         request = self.context.get("request")
-        order = Order.objects.create(customer=request.user, **validated_data)
-
+        
+        embedded_items = []
         for item_data in items_data:
-            OrderItem.objects.create(order=order, **item_data)
-
+            prod_id = item_data["product_id"]
+            try:
+                prod = Product.objects.get(id=prod_id)
+                prod_name = prod.name
+            except Exception:
+                prod_name = "Unknown Product"
+                
+            embedded_items.append(OrderItem(
+                product_id=prod_id,
+                product_name=prod_name,
+                quantity=item_data["quantity"],
+                price_at_purchase=item_data["price_at_purchase"]
+            ))
+            
+        order = Order(
+            customer_id=request.user.id,
+            customer_username=request.user.username,
+            customer_address=request.user.address or "",
+            items=embedded_items,
+            **validated_data
+        )
+        order.save()
         order.calculate_total()
         return order

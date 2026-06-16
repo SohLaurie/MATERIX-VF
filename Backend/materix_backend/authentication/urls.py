@@ -4,6 +4,8 @@ from .views import (
     EmailTokenObtainPairView,
     CustomTokenRefreshView,
     get_user_profile,
+    AdminUserListView,
+    AdminUserDetailView,
 )
 
 urlpatterns = [
@@ -11,4 +13,6 @@ urlpatterns = [
     path("login/", EmailTokenObtainPairView.as_view(), name="login"),
     path("token/refresh/", CustomTokenRefreshView.as_view(), name="token_refresh"),
     path("profile/", get_user_profile, name="profile"),
+    path("admin/users/", AdminUserListView.as_view(), name="admin_users"),
+    path("admin/users/<int:pk>/", AdminUserDetailView.as_view(), name="admin_user_detail"),
 ]

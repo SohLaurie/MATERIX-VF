@@ -1,0 +1,899 @@
+/* ── Admin Dashboard scoped styles ────────────────────────────────────────────
+   All rules live inside .adm-scope to avoid colliding with the rest of the
+   MATERIX frontend (theme.css overwrites h1/h2/button/label/input globally).
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ── Root scope reset ────────────────────────────────────────────────────────── */
+.adm-scope {
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-size: 16px;
+  color: #111827;
+  min-height: 100vh;
+  background-color: #f3f4f6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Box-sizing */
+.adm-scope *,
+.adm-scope *::before,
+.adm-scope *::after {
+  box-sizing: border-box;
+}
+
+/* ── Kill the global theme.css border-border / outline-ring rules ─────────────
+   theme.css @layer base has: * { @apply border-border outline-ring/50; }
+   We need !important to beat it.
+   ──────────────────────────────────────────────────────────────────────────── */
+.adm-scope * {
+  outline: none !important;
+  /* Don't set border here — it would break our own borders */
+}
+
+/* Re-enable visible focus only for keyboard navigation */
+.adm-scope *:focus-visible {
+  outline: 2px solid #f59e0b !important;
+  outline-offset: 2px !important;
+}
+
+/* ── Heading resets (theme.css sets font-size via CSS vars on h1-h4) ──────────── */
+.adm-scope h1,
+.adm-scope h2,
+.adm-scope h3,
+.adm-scope h4 {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  margin: 0 !important;
+}
+
+/* ── Label reset ─────────────────────────────────────────────────────────────── */
+.adm-scope label {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+}
+
+/* ── Button reset — CRITICAL: do NOT set background/border here because it
+   would override .adm-btn-primary via higher specificity (.adm-scope button
+   = 0,1,1 vs .adm-btn-primary = 0,1,0). Instead only reset cursor & font. ──── */
+.adm-scope button {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  font-family: inherit !important;
+  cursor: pointer;
+}
+
+/* ── Input / select reset ────────────────────────────────────────────────────── */
+.adm-scope input,
+.adm-scope select,
+.adm-scope textarea {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  font-family: inherit !important;
+  box-sizing: border-box;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   NAVBAR
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-navbar {
+  background-color: #111827;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.adm-navbar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.adm-logo {
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: #f59e0b !important;
+  letter-spacing: -0.03em;
+  flex-shrink: 0;
+  line-height: 1 !important;
+}
+
+.adm-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.adm-nav-links a,
+.adm-nav-links span {
+  font-size: 0.875rem;
+  color: #d1d5db;
+  text-decoration: none;
+  transition: color 0.15s;
+  font-weight: 400;
+}
+.adm-nav-links a:hover { color: #fff; }
+.adm-nav-links .adm-active { color: #f59e0b !important; font-weight: 600 !important; }
+
+.adm-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.adm-bell-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  transition: background-color 0.15s;
+  color: #d1d5db;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.adm-bell-btn:hover { background-color: rgba(255,255,255,0.1) !important; }
+
+.adm-notif-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background-color: #f59e0b !important;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.adm-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #d1d5db;
+  font-size: 0.875rem;
+}
+
+.adm-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background-color: #4b5563 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+  border: none !important;
+}
+
+.adm-logout-btn {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 0 !important;
+}
+.adm-logout-btn:hover { color: #f59e0b; }
+
+.adm-mobile-menu-btn {
+  color: #d1d5db;
+  display: none;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .adm-nav-links { display: none !important; }
+  .adm-user-chip { display: none !important; }
+  .adm-mobile-menu-btn { display: flex !important; align-items: center; }
+}
+
+.adm-mobile-menu {
+  background-color: #1f2937;
+  padding: 0.5rem 1.5rem 0.75rem;
+  border-top: 1px solid #374151;
+}
+.adm-mobile-menu a {
+  display: block;
+  padding: 6px 0;
+  font-size: 0.875rem;
+  color: #d1d5db;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.adm-mobile-menu a:hover { color: #fff; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TAB BAR
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-tabbar {
+  background-color: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 56px;
+  z-index: 30;
+}
+
+.adm-tabbar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.adm-tabbar-inner::-webkit-scrollbar { display: none; }
+
+/* Tab buttons — must explicitly set all state styles to override global theme */
+.adm-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 1rem;
+  height: 52px;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-radius: 0 !important;
+  color: #6b7280;
+  background: transparent !important;
+  transition: color 0.15s, border-bottom-color 0.15s;
+  flex-shrink: 0;
+  cursor: pointer;
+  /* Kill the global ring/border from theme.css */
+  outline: none !important;
+  box-shadow: none !important;
+}
+.adm-tab-btn:hover {
+  color: #374151;
+  border-bottom-color: #d1d5db !important;
+  background: transparent !important;
+}
+.adm-tab-btn:focus,
+.adm-tab-btn:focus-visible,
+.adm-tab-btn:active {
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.adm-tab-btn.active {
+  color: #f59e0b !important;
+  border-bottom-color: #f59e0b !important;
+  background: transparent !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MAIN CONTENT
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STAT CARDS
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 640px) { .adm-stats-grid { grid-template-columns: 1fr; } }
+
+.adm-stat-card {
+  background-color: #fff;
+  border-radius: 0.75rem;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  padding: 1.25rem;
+}
+.adm-stat-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.adm-stat-label {
+  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
+  color: #9ca3af;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+.adm-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background-color: #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+.adm-stat-value {
+  font-size: 1.875rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  line-height: 1 !important;
+}
+.adm-stat-change {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0.5rem;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+.adm-stat-change.up   { color: #16a34a; }
+.adm-stat-change.down { color: #ef4444; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAGE / SECTION HEADERS
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-section-title {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+}
+.adm-section-sub {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CARDS / TABLE WRAPPERS
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-card {
+  background-color: #fff;
+  border-radius: 0.75rem;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.adm-table-wrap {
+  background-color: #fff;
+  border-radius: 0.75rem;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.adm-table-scroll { overflow-x: auto; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TABLES
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.adm-table thead tr {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #f3f4f6;
+}
+.adm-table th {
+  padding: 0.75rem 1.25rem;
+  text-align: left;
+  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
+  color: #9ca3af;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+.adm-table tbody tr {
+  border-bottom: 1px solid #f9fafb;
+  transition: background-color 0.1s;
+}
+.adm-table tbody tr:last-child { border-bottom: none; }
+.adm-table tbody tr:hover { background-color: #f9fafb; }
+.adm-table td {
+  padding: 0.875rem 1.25rem;
+  vertical-align: middle;
+}
+.adm-td-mono {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem !important;
+  color: #9ca3af;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BADGES
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4;
+}
+.adm-badge-delivered  { background-color: #dcfce7; color: #15803d; }
+.adm-badge-progress   { background-color: #dbeafe; color: #1d4ed8; }
+.adm-badge-pending    { background-color: #fef3c7; color: #b45309; }
+.adm-badge-cancelled  { background-color: #fee2e2; color: #b91c1c; }
+.adm-badge-instock    { background-color: #dcfce7; color: #15803d; }
+.adm-badge-outstock   { background-color: #fee2e2; color: #b91c1c; }
+.adm-badge-lowstock   { background-color: #fef3c7; color: #b45309; }
+.adm-badge-tech       { border: 1px solid #60a5fa; color: #2563eb; background: transparent; }
+.adm-badge-client     { border: 1px solid #9ca3af; color: #4b5563; background: transparent; }
+.adm-badge-staff      { border: 1px solid #fbbf24; color: #b45309; background: transparent; }
+.adm-badge-admin      { border: 1px solid #c084fc; color: #7c3aed; background: transparent; }
+.adm-badge-tools      { background-color: #eff6ff; color: #2563eb; }
+.adm-badge-safety     { background-color: #fffbeb; color: #b45309; }
+.adm-badge-materials  { background-color: #f0fdf4; color: #15803d; }
+.adm-badge-electrical { background-color: #faf5ff; color: #7c3aed; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TOGGLE SWITCH
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-toggle {
+  position: relative;
+  display: inline-flex;
+  height: 20px;
+  width: 36px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+  border: none !important;
+  padding: 0 !important;
+}
+.adm-toggle.on  { background-color: #f59e0b !important; }
+.adm-toggle.off { background-color: #d1d5db !important; }
+.adm-toggle:focus,
+.adm-toggle:focus-visible { outline: none !important; box-shadow: none !important; }
+
+.adm-toggle-thumb {
+  pointer-events: none;
+  margin-top: 2px;
+  display: inline-block;
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background-color: #fff !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+}
+.adm-toggle.on  .adm-toggle-thumb { transform: translateX(18px); }
+.adm-toggle.off .adm-toggle-thumb { transform: translateX(2px); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ICON BUTTONS (small square action buttons)
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+  transition: background-color 0.15s, color 0.15s;
+  border: none !important;
+  cursor: pointer;
+  padding: 0 !important;
+}
+.adm-icon-btn:hover { background-color: #e5e7eb !important; }
+.adm-icon-btn.danger:hover { background-color: #fee2e2 !important; color: #ef4444 !important; }
+.adm-icon-btn:focus,
+.adm-icon-btn:focus-visible { outline: none !important; box-shadow: none !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PRIMARY & SECONDARY BUTTONS
+   These need !important to beat the .adm-scope button specificity battle.
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-btn-primary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  background-color: #f59e0b !important;
+  color: #fff !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+  transition: background-color 0.15s;
+  border: none !important;
+  cursor: pointer;
+  line-height: 1.4 !important;
+}
+.adm-btn-primary:hover { background-color: #d97706 !important; }
+.adm-btn-primary:focus,
+.adm-btn-primary:focus-visible { outline: none !important; box-shadow: none !important; }
+.adm-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.adm-btn-secondary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  background-color: transparent !important;
+  border: 1px solid #e5e7eb !important;
+  color: #4b5563 !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  transition: background-color 0.15s;
+  cursor: pointer;
+  line-height: 1.4 !important;
+}
+.adm-btn-secondary:hover { background-color: #f9fafb !important; }
+.adm-btn-secondary:focus,
+.adm-btn-secondary:focus-visible { outline: none !important; box-shadow: none !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   VIEW ALL LINK BUTTON
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-view-all {
+  font-size: 0.875rem !important;
+  color: #f59e0b !important;
+  font-weight: 500 !important;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 0 !important;
+}
+.adm-view-all:hover { color: #d97706 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SEARCH BAR
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-search-wrap {
+  position: relative;
+}
+.adm-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 1;
+}
+.adm-search-input {
+  padding: 0.5rem 1rem 0.5rem 2.25rem !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid #e5e7eb !important;
+  background-color: #fff !important;
+  font-size: 0.875rem !important;
+  width: 11rem !important;
+  transition: box-shadow 0.15s, border-color 0.15s !important;
+  color: #374151 !important;
+  outline: none !important;
+}
+.adm-search-input:focus {
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.3) !important;
+  border-color: #f59e0b !important;
+  outline: none !important;
+}
+
+.adm-filter-select {
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid #e5e7eb !important;
+  background-color: #fff !important;
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+  cursor: pointer;
+  outline: none !important;
+}
+.adm-filter-select:focus {
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.3) !important;
+  border-color: #f59e0b !important;
+  outline: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FORM FIELDS
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-field-label {
+  display: block;
+  font-size: 0.75rem !important;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: 500 !important;
+}
+.adm-field-input {
+  width: 100%;
+  padding: 0.625rem 0.75rem !important;
+  border-radius: 0.5rem !important;
+  background-color: #f3f4f6 !important;
+  border: 1px solid transparent !important;
+  font-size: 0.875rem !important;
+  color: #111827 !important;
+  transition: box-shadow 0.15s, border-color 0.15s !important;
+  outline: none !important;
+}
+.adm-field-input:focus {
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.3) !important;
+  border-color: #f59e0b !important;
+  outline: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0,0,0,0.5);
+  padding: 1rem;
+  animation: adm-fade-in 0.15s ease;
+}
+.adm-modal-box {
+  background-color: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: adm-slide-up 0.2s ease;
+}
+.adm-modal-body { padding: 1.5rem; }
+.adm-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.adm-modal-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  line-height: 1.3 !important;
+}
+.adm-modal-close {
+  color: #9ca3af;
+  transition: color 0.15s;
+  border: none !important;
+  background: transparent !important;
+  cursor: pointer;
+  display: flex;
+  padding: 2px !important;
+}
+.adm-modal-close:hover { color: #374151; }
+.adm-modal-close:focus,
+.adm-modal-close:focus-visible { outline: none !important; box-shadow: none !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DETAIL ROWS (order detail modal)
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.adm-detail-row:last-child { border-bottom: none; }
+.adm-detail-key { font-size: 0.875rem !important; color: #9ca3af; }
+.adm-detail-val { font-size: 0.875rem !important; font-weight: 600 !important; color: #111827; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SETTINGS
+   ───────────────────────────────────────────────────────────────────────────── */
+.adm-settings-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+}
+.adm-settings-card-title {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  line-height: 1.3 !important;
+}
+.adm-settings-card-sub {
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  margin-bottom: 2px;
+}
+.adm-2fa-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+/* Save settings button — needs explicit override */
+.adm-btn-save {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.625rem 1.5rem !important;
+  border-radius: 0.5rem !important;
+  background-color: #f59e0b !important;
+  color: #fff !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  border: none !important;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.adm-btn-save:hover { background-color: #d97706 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MISCELLANEOUS UTILITIES
+   ───────────────────────────────────────────────────────────────────────────── */
+/* Spinner */
+.adm-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #fde68a;
+  border-top-color: #f59e0b;
+  border-radius: 9999px;
+  animation: adm-spin 0.7s linear infinite;
+}
+
+/* User avatar circle */
+.adm-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background-color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  color: #4b5563;
+  flex-shrink: 0;
+}
+
+/* Status dot */
+.adm-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.adm-status-dot.active    { background-color: #22c55e; }
+.adm-status-dot.suspended { background-color: #ef4444; }
+
+/* Saved toast */
+.adm-saved-toast {
+  font-size: 0.875rem !important;
+  color: #16a34a;
+  font-weight: 500 !important;
+  animation: adm-fade-in 0.2s ease;
+}
+
+/* Layout helpers */
+.adm-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .adm-page-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.adm-page-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+@media (min-width: 640px) {
+  .adm-page-controls {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.adm-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 480px) { .adm-grid-2 { grid-template-columns: 1fr; } }
+
+.adm-grid-2-sm {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 640px) { .adm-grid-2-sm { grid-template-columns: 1fr; } }
+
+.adm-col-span-2 { grid-column: span 2; }
+@media (max-width: 640px) { .adm-col-span-2 { grid-column: span 1; } }
+
+.adm-space-2 { display: flex; flex-direction: column; gap: 0.5rem; }
+.adm-space-3 { display: flex; flex-direction: column; gap: 0.75rem; }
+.adm-space-4 { display: flex; flex-direction: column; gap: 1rem; }
+.adm-space-5 { display: flex; flex-direction: column; gap: 1.25rem; }
+.adm-space-6 { display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* Product image */
+.adm-product-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.adm-product-img-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem !important;
+  color: #9ca3af;
+  flex-shrink: 0;
+  font-weight: 500 !important;
+}
+
+/* Keyframes */
+@keyframes adm-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes adm-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes adm-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

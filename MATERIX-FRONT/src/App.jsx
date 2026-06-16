@@ -17,6 +17,7 @@ import Payment from './pages/Payment';
 import TechDashboard from './pages/TechDashboard/TechDashboard';
 import DeliverDashboard from './pages/DeliveryDashboard/DeliverDashboard';
 import Profile from './components/Profile';
+import AdminDashboard from './pages/AdminDashboard';
 
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -49,8 +50,7 @@ function App() {
           <Route path="/techdash" element={<TechDashboard />} />
           <Route path="/deldash" element={<DeliverDashboard />} />
           <Route path="/profile" element={<Profile />} />
-        
-
+          <Route path="/admindash" element={<AdminDashboard />} />
         </Routes>
         {/* <Footer />   */}
       </div>

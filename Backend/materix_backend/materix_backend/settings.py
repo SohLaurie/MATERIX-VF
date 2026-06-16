@@ -87,6 +87,12 @@ DATABASES = {
     }
 }
 
+import mongoengine
+mongoengine.connect(
+    db='materix_db',
+    host='mongodb+srv://laurienoubissie_db_user:laurie005@clustermaterix.srnv6wh.mongodb.net/?retryWrites=true&w=majority'
+)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

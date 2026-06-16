@@ -83,7 +83,7 @@ const Login = () => {
           window.location.href = "/deldash";
           break;
         case "admin":
-          window.location.href = "http://127.0.0.1:8000/admin/";
+          window.location.href = "/admindash";
           break;
         default:
           window.location.href = "/#home";

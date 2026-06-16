@@ -3,7 +3,6 @@ from rest_framework import serializers
 from authentication.models import User
 from .models import ServiceRequest
 
-
 class TechnicianPublicSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source='username')
     location = serializers.CharField(source='address', allow_null=True)
@@ -31,67 +30,69 @@ class TechnicianPublicSerializer(serializers.ModelSerializer):
         return None
 
 
-class ServiceRequestSerializer(serializers.ModelSerializer):
-    technician_id = serializers.PrimaryKeyRelatedField(
-        source='technician',
-        queryset=User.objects.filter(role='technician'),
-        write_only=True,
-        required=False
-    )
-    client_id = serializers.PrimaryKeyRelatedField(
-        source='client',
-        queryset=User.objects.all(),
-        required=False,
-        allow_null=True,
-        write_only=True
-    )
-
-    class Meta:
-        model = ServiceRequest
-        fields = [
-            'id',
-            'technician_id', 'client_id',
-            'client_name', 'contact', 'preferred_method',
-            'message', 'location',
-            'status',   # <-- writable for PATCH
-            'created_at', 'updated_at',
-            'technician', 'client',
-        ]
-        read_only_fields = ['created_at', 'updated_at', 'technician', 'client']
-        extra_kwargs = {
-            'technician_id': {'required': False},
-            'client_id': {'required': False},
-            'status': {'required': False},
-        }
+class ServiceRequestSerializer(serializers.Serializer):
+    id = serializers.CharField(read_only=True)
+    technician_id = serializers.IntegerField()
+    client_id = serializers.IntegerField(required=False, allow_null=True)
+    client_name = serializers.CharField(max_length=150)
+    contact = serializers.CharField(max_length=150)
+    preferred_method = serializers.CharField(max_length=20)
+    message = serializers.CharField()
+    location = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
+    status = serializers.CharField(default='pending')
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
 
     def create(self, validated_data):
         request = self.context.get('request')
+        client_id = None
+        client_username = None
         if request and request.user and request.user.is_authenticated:
-            validated_data.setdefault('client', request.user)
-        return super().create(validated_data)
+            client_id = request.user.id
+            client_username = request.user.username
+            
+        tech_id = validated_data.get('technician_id')
+        try:
+            tech = User.objects.get(id=tech_id, role='technician')
+            tech_username = tech.username
+        except Exception:
+            raise serializers.ValidationError({"technician_id": "Invalid technician ID"})
+
+        sr = ServiceRequest(
+            technician_id=tech_id,
+            technician_username=tech_username,
+            client_id=client_id,
+            client_username=client_username,
+            **validated_data
+        )
+        sr.save()
+        return sr
 
     def update(self, instance, validated_data):
-        """
-        Allow partial updates (PATCH) without requiring unrelated fields.
-        """
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         return instance
 
     def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['technician'] = {
-            'id': instance.technician_id,
-            'username': instance.technician.username,
-            'email': instance.technician.email,
-            'specialty': instance.technician.specialty,
-        }
-        data['client'] = None
-        if instance.client:
-            data['client'] = {
+        return {
+            'id': str(instance.id),
+            'technician_id': instance.technician_id,
+            'client_id': instance.client_id,
+            'client_name': instance.client_name,
+            'contact': instance.contact,
+            'preferred_method': instance.preferred_method,
+            'message': instance.message,
+            'location': instance.location,
+            'status': instance.status,
+            'created_at': instance.created_at,
+            'updated_at': instance.updated_at,
+            'technician': {
+                'id': instance.technician_id,
+                'username': instance.technician_username or "Technician",
+            },
+            'client': {
                 'id': instance.client_id,
-                'username': instance.client.username,
-                'email': instance.client.email,
-            }
-        return data
+                'username': instance.client_username or "Client",
+            } if instance.client_id else None
+        }
