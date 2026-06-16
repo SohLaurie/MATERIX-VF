@@ -2,6 +2,9 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.core.files.storage import default_storage
+import os
 from .models import Product, Order
 from .serializers import ProductSerializer, OrderSerializer
 
@@ -200,6 +203,7 @@ class AdminOrderDetailView(APIView):
 
 class AdminProductListView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
         if request.user.role != 'admin' and not request.user.is_staff:
@@ -215,6 +219,31 @@ class AdminProductListView(APIView):
         serializer = ProductSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             data = serializer.validated_data
+            
+            image_file = request.FILES.get("image")
+            image_url = None
+            if image_file:
+                path = default_storage.save(os.path.join('products', 'images', image_file.name), image_file)
+                image_url = default_storage.url(path)
+            else:
+                image_url = request.data.get("image") or None
+                
+            obj_file = request.FILES.get("three_d_path")
+            three_d_path = None
+            if obj_file:
+                path = default_storage.save(os.path.join('products', '3d', obj_file.name), obj_file)
+                three_d_path = default_storage.url(path)
+            else:
+                three_d_path = request.data.get("three_d_path") or None
+                
+            mtl_file = request.FILES.get("mtl_file")
+            mtl_url = None
+            if mtl_file:
+                path = default_storage.save(os.path.join('products', '3d', mtl_file.name), mtl_file)
+                mtl_url = default_storage.url(path)
+            else:
+                mtl_url = request.data.get("mtl_file") or None
+
             p = Product(
                 name=data.get("name"),
                 price=data.get("price"),
@@ -225,9 +254,9 @@ class AdminProductListView(APIView):
                 in_stock=data.get("in_stock", True),
                 discount=data.get("discount", 0),
                 stock=data.get("stock", 0),
-                image_url=request.data.get("image"), # Map frontend key "image" to DB image_url
-                three_d_path=request.data.get("three_d_path"),
-                mtl_file=request.data.get("mtl_file")
+                image_url=image_url,
+                three_d_path=three_d_path,
+                mtl_file=mtl_url
             )
             p.save()
             return Response(ProductSerializer(p, context={"request": request}).data, status=status.HTTP_201_CREATED)
@@ -236,6 +265,7 @@ class AdminProductListView(APIView):
 
 class AdminProductDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def patch(self, request, pk):
         if request.user.role != 'admin' and not request.user.is_staff:
@@ -251,12 +281,26 @@ class AdminProductDetailView(APIView):
             for key, val in data.items():
                 setattr(p, key, val)
                 
-            if "image" in request.data:
-                p.image_url = request.data["image"]
-            if "three_d_path" in request.data:
-                p.three_d_path = request.data["three_d_path"]
-            if "mtl_file" in request.data:
-                p.mtl_file = request.data["mtl_file"]
+            if "image" in request.FILES:
+                image_file = request.FILES["image"]
+                path = default_storage.save(os.path.join('products', 'images', image_file.name), image_file)
+                p.image_url = default_storage.url(path)
+            elif "image" in request.data:
+                p.image_url = request.data["image"] or None
+
+            if "three_d_path" in request.FILES:
+                obj_file = request.FILES["three_d_path"]
+                path = default_storage.save(os.path.join('products', '3d', obj_file.name), obj_file)
+                p.three_d_path = default_storage.url(path)
+            elif "three_d_path" in request.data:
+                p.three_d_path = request.data["three_d_path"] or None
+
+            if "mtl_file" in request.FILES:
+                mtl_file = request.FILES["mtl_file"]
+                path = default_storage.save(os.path.join('products', '3d', mtl_file.name), mtl_file)
+                p.mtl_file = default_storage.url(path)
+            elif "mtl_file" in request.data:
+                p.mtl_file = request.data["mtl_file"] or None
 
             p.save()
             return Response(ProductSerializer(p, context={"request": request}).data, status=status.HTTP_200_OK)

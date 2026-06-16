@@ -18,6 +18,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             'specialty',
             'address',
             'cni_number',
+            'profile_picture',
         ]
 
     def validate(self, data):

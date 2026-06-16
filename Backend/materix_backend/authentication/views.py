@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # Registration endpoint
 class RegisterView(generics.CreateAPIView):
@@ -52,6 +53,7 @@ def get_user_profile(request):
 
 class AdminUserListView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
         if request.user.role != 'admin' and not request.user.is_staff:
@@ -72,21 +74,22 @@ class AdminUserListView(APIView):
 
 class AdminUserDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def patch(self, request, pk):
         if request.user.role != 'admin' and not request.user.is_staff:
             return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
         user = get_object_or_404(User, pk=pk)
         
-        data = request.data.copy()
-        if 'password' in data and data['password']:
-            from django.contrib.auth.hashers import make_password
-            data['password'] = make_password(data['password'])
-            
-        serializer = UserSerializer(user, data=data, partial=True)
+        serializer = UserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
-            if 'password' in data and data['password']:
-                user.password = data['password']
+            if 'password' in request.data and request.data['password']:
+                from django.contrib.auth.hashers import make_password
+                user.password = make_password(request.data['password'])
+            
+            if 'profile_picture' in request.data and not request.data['profile_picture']:
+                user.profile_picture = None
+
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
