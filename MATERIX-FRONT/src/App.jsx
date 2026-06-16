@@ -18,6 +18,8 @@ import TechDashboard from './pages/TechDashboard/TechDashboard';
 import DeliverDashboard from './pages/DeliveryDashboard/DeliverDashboard';
 import Profile from './components/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import VerifyEmail from './pages/Auth/VerifyEmail';
+import EmailTemplate from './pages/Auth/EmailTemplate';
 
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -51,6 +53,8 @@ function App() {
           <Route path="/deldash" element={<DeliverDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admindash" element={<AdminDashboard />} />
+          <Route path="/verify" element={<VerifyEmail />} />
+          <Route path="/email-template" element={<EmailTemplate />} />
         </Routes>
         {/* <Footer />   */}
       </div>

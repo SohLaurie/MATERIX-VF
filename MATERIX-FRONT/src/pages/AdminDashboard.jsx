@@ -6,6 +6,7 @@ import {
   TrendingUp, TrendingDown, User, ExternalLink, Menu,
 } from "lucide-react";
 import "../styles/admin-dashboard.css";
+import { useNavigate } from "react-router-dom";
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
@@ -1773,6 +1774,7 @@ function OrdersTab() {
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
 function SettingsTab() {
+  const navigate = useNavigate();
   const [site,    setSite]    = useState("MATERIX");
   const [email,   setEmail]   = useState("admin@materix.com");
   const [tz,      setTz]      = useState("UTC+0 (London)");
@@ -1939,6 +1941,37 @@ function SettingsTab() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Email Verification Template Card */}
+      <div className="adm-card" style={{ width: '120%', padding: "1.5rem" }}>
+        <div className="adm-settings-icon-row">
+          <Mail size={17} style={{ color: "#f59e0b" }} />
+          <h2 className="adm-settings-card-title">Email Templates</h2>
+        </div>
+        <div className="adm-space-4">
+          <p style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
+            Preview and customize how the automated verification email template appears to registering technicians and users.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/email-template")}
+            className="adm-btn-secondary"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              borderColor: "#f59e0b",
+              color: "#f59e0b",
+              backgroundColor: "transparent",
+              cursor: "pointer",
+              padding: "0.5rem 1rem",
+              borderRadius: "0.375rem"
+            }}
+          >
+            <Eye size={14} /> Preview Verification Email Template
+          </button>
         </div>
       </div>
 
