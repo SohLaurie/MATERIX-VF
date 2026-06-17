@@ -1,0 +1,294 @@
+.register-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f2f2f2; 
+  margin: 0; 
+  font-family: "Poppins", sans-serif;
+  padding: 2rem 0;
+}
+
+/* Container Layout */
+.register-container {
+  font-family: "Poppins", sans-serif; 
+  display: flex;
+  width: 850px;
+  height: 600px;             /* Taller to fit 5 inputs with uniform spacing */
+  border-radius: 16px;       /* Rounded corners like login */
+  overflow: hidden;          /* Keep circles inside */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Soft shadow */
+  background: #fff;
+}
+
+/* ── Technician Scoped Container ────────────────────────────────────────── */
+.register-tech-container {
+  font-family: "Poppins", sans-serif; 
+  display: flex;
+  width: 950px;              /* Slightly wider for grid inputs */
+  height: 750px;             /* Taller to fit all documents and grid */
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: #fff;
+}
+
+/* Left Section */
+.register-left {
+  flex: 1;
+  background: linear-gradient(135deg, #000000, #333333);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-left .register-overlay {
+  text-align: center;
+  z-index: 2;
+  position: relative;
+}
+
+.register-left h1 {
+  font-size: 36px;
+  margin-bottom: 10px;
+  color: #ff6600; /* Orange */
+  font-weight: 700;
+}
+
+.register-left p {
+  font-size: 16px;
+  opacity: 0.9;
+  color: #ccc;
+}
+
+.register-left .site-link {
+  position: absolute;
+  bottom: -220px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  color: #fff;
+  z-index: 2;
+}
+
+/* Floating Circles - Duplicate of Login.css */
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  animation: float-reg 6s ease-in-out infinite alternate;
+  opacity: 0.8;
+}
+
+.circle1 {
+  width: 120px;
+  height: 120px;
+  top: 15%;
+  left: 20%;
+  background: radial-gradient(circle, #ff6600, rgba(255, 255, 255, 0.1));
+}
+
+.circle2 {
+  width: 180px;
+  height: 180px;
+  bottom: 20%;
+  right: 15%;
+  background: radial-gradient(circle, #ff3300, rgba(0, 0, 0, 0.5));
+}
+
+.circle3 {
+  width: 90px;
+  height: 90px;
+  top: 40%;
+  right: 25%;
+  background: radial-gradient(circle, #ff9900, rgba(0, 0, 0, 0.4));
+}
+
+/* Floating Animation */
+@keyframes float-reg {
+  from {
+    transform: translateY(0px);
+  }
+  to {
+    transform: translateY(-20px);
+  }
+}
+
+/* Right Section */
+.register-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+}
+
+/* Technician Scrollable Right Section */
+.register-tech-right {
+  flex: 1.2;                 /* Give slightly more flex weight to form */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;   /* Align start to scroll naturally */
+  background: #ffffff;
+  overflow-y: auto;          /* Scroll vertical */
+  max-height: 100%;
+  padding: 2.5rem 1.5rem;
+}
+
+.register-form-box {
+  width: 80%;
+  max-width: 380px;
+}
+
+.register-tech-form-box {
+  width: 90%;
+  max-width: 480px;
+}
+
+.register-form-box h3,
+.register-tech-form-box h3 {
+  font-size: 20px;
+  margin: 0;
+  color: #222;
+}
+
+.register-form-box h4,
+.register-tech-form-box h4 {
+  font-size: 18px;
+  color: #ff6600;
+  margin: 5px 0;
+}
+
+.register-form-box .login-text,
+.register-tech-form-box .login-text {
+  color: #444;
+  font-weight: bold;
+}
+
+/* Input Fields */
+.input-box {
+  margin: 12px 0;             /* Clean uniform gaps */
+}
+
+/* Grid Layout for tech form */
+.tech-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 8px 0;
+}
+
+.input-box input,
+.tech-grid-2 input,
+.tech-grid-2 select {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-bottom: 2px solid #bbb;
+  font-size: 14px;
+  outline: none;
+  transition: 0.3s;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.input-box input:focus,
+.tech-grid-2 input:focus,
+.tech-grid-2 select:focus {
+  border-bottom: 2px solid #ff6600;
+}
+
+/* Options */
+.options {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin: 10px 0 20px;
+}
+
+.options label {
+  color: #444;
+}
+
+.options .forgot {
+  text-decoration: none;
+  color: #ff6600;
+  font-weight: 500;
+}
+
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  background: #ff6600;
+  color: #fff;
+  padding: 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.submit-btn:hover {
+  background: #cc5200;
+}
+
+.submit-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Create Account Link */
+.create-account {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.create-account a {
+  text-decoration: none;
+  color: #444;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.create-account a:hover {
+  color: #ff6600;
+}
+
+/* ── Drag & Drop Box Styling ────────────────────────────────────────────── */
+.tech-upload-box {
+  border: 2px dashed #ff6600;
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  background-color: #fffbeb;
+  transition: all 0.2s;
+  margin: 12px 0;
+}
+
+.tech-upload-box:hover {
+  background-color: #fef3c7;
+}
+
+.uploaded-docs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.uploaded-doc-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+}

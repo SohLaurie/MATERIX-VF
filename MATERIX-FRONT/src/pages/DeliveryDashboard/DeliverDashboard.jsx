@@ -1,460 +1,1247 @@
-import React, { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  BarChart2, Package, CheckCircle, Clock, Bell, Truck,
-  Eye, Trash2, Reply, Archive, Check, X, MapPin, User,
+  BarChart2, ShoppingCart, Bell, ChevronDown, Search, Eye, X,
+  AlertTriangle, CheckCircle, Truck, Package, TrendingUp, TrendingDown,
+  User, ExternalLink, Menu, Archive, Trash2, Reply
 } from "lucide-react";
-import Navbar from "../../components/Navbar";
+import "../../styles/admin-dashboard.css";
 
-const INIT_ORDERS = [
-  { id: "ORD-101", customer: "Sarah Chen", destination: "14 Oak St, Downtown", items: "Industrial Drill, Safety Helmet", total: "$348.99", date: "Jun 16, 2026", status: "pending" },
-  { id: "ORD-102", customer: "Mike Johnson", destination: "72 River Rd, Westside", items: "Copper Wire 100m, Wrench Set", total: "$214.50", date: "Jun 15, 2026", status: "in_transit" },
-  { id: "ORD-103", customer: "Emily Davis", destination: "9 Maple Ave, Northgate", items: "Steel Bolts Pack x5", total: "$172.50", date: "Jun 14, 2026", status: "delivered" },
-  { id: "ORD-104", customer: "James Wilson", destination: "31 Park Blvd, Central", items: "Circuit Breaker 30A, Conduit", total: "$432.00", date: "Jun 13, 2026", status: "pending" },
-  { id: "ORD-105", customer: "Lisa Anderson", destination: "55 Harbor Dr, Southpark", items: "Pipe Fittings Set, Sealant", total: "$89.00", date: "Jun 12, 2026", status: "delivered" },
-  { id: "ORD-106", customer: "Kwame Asante", destination: "18 Uptown Rd, Eastview", items: "Power Tools Kit", total: "$675.00", date: "Jun 11, 2026", status: "in_transit" },
-];
+// ─── API Helpers ──────────────────────────────────────────────────────────────
+const BASE = "http://127.0.0.1:8000";
 
-const INIT_NOTIFICATIONS = [
-  { id: "D1", title: "New Order ORD-101 Assigned", body: "Order ORD-101 from Sarah Chen has been assigned to you.", time: "30m ago", status: "unread" },
-  { id: "D2", title: "New Order ORD-104 Assigned", body: "Order ORD-104 from James Wilson requires delivery today.", time: "1h ago", status: "unread" },
-  { id: "D3", title: "Order ORD-102 In Transit", body: "ORD-102 has been picked up and is now in transit.", time: "3h ago", status: "read" },
-  { id: "D4", title: "Order ORD-103 Delivered", body: "ORD-103 was successfully delivered to Emily Davis.", time: "1d ago", status: "replied" },
-  { id: "D5", title: "Route Update: Downtown", body: "Traffic delay on Oak Street. Consider alternate route.", time: "2d ago", status: "archived" },
-];
+function authHeader() {
+  const token = localStorage.getItem("access");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
-function StatCard({ icon, label, value, color, bg }) {
+async function apiFetch(path, opts = {}) {
+  const headers = { ...authHeader(), ...opts.headers };
+  if (!(opts.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+  const res = await fetch(`${BASE}${path}`, {
+    headers,
+    ...opts,
+  });
+  if (!res.ok) throw new Error(`${res.status}`);
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+function orderStatusBadge(s) {
+  const map = {
+    "Delivered":   "adm-badge adm-badge-delivered",
+    "In Progress": "adm-badge adm-badge-progress",
+    "Pending":     "adm-badge adm-badge-pending",
+    "Cancelled":   "adm-badge adm-badge-cancelled",
+  };
+  return map[s] ?? "adm-badge";
+}
+
+// ─── Shared UI Components ─────────────────────────────────────────────────────
+function Modal({ open, onClose, children }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    if (open) document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
   return (
-    <div className="rounded-2xl p-5 shadow-sm" style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.06)" }}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wider mb-2" style={{ color: "#94A3B8", letterSpacing: "0.1em" }}>{label}</p>
-          <p style={{ fontSize: "2.25rem", fontWeight: 800, color: "#0F172A", lineHeight: 1 }}>{value}</p>
-        </div>
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
-          <span style={{ color }}>{icon}</span>
-        </div>
+    <div className="adm-modal-backdrop" onClick={onClose}>
+      <div className="adm-modal-box" onClick={e => e.stopPropagation()}>
+        {children}
       </div>
     </div>
   );
 }
 
-function OrderDetailModal({ order, onClose }) {
-  const statusMap = {
-    pending: { label: "Pending", color: "#FF8C00", bg: "#FFF3E0" },
-    in_transit: { label: "In Transit", color: "#2563EB", bg: "#EFF6FF" },
-    delivered: { label: "Delivered", color: "#16A34A", bg: "#F0FDF4" },
-  };
-  const s = statusMap[order.status] || statusMap.pending;
+function ModalHeader({ title, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)" }}>
-      <div className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden" style={{ backgroundColor: "#ffffff" }}>
-        <div className="px-6 py-4 border-b flex items-center justify-between"
-          style={{ borderColor: "rgba(15,23,42,0.08)", backgroundColor: "#0F172A" }}>
-          <div>
-            <p className="text-xs" style={{ color: "#94A3B8" }}>Order Details</p>
-            <h3 style={{ color: "#FACC15", fontWeight: 700, fontSize: "1.125rem" }}>{order.id}</h3>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-            style={{ backgroundColor: "rgba(255,255,255,0.1)", border: "none", color: "white" }}>
-            <X size={16} />
-          </button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold px-3 py-1 rounded-full"
-              style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
-            <span className="text-sm" style={{ color: "#64748B" }}>{order.date}</span>
-          </div>
-          <div className="space-y-3">
-            {[
-              { icon: <User size={14} />, label: "Customer", value: order.customer },
-              { icon: <MapPin size={14} />, label: "Destination", value: order.destination },
-              { icon: <Package size={14} />, label: "Items", value: order.items },
-              { icon: <span style={{ fontSize: "0.875rem", fontWeight: 700 }}>$</span>, label: "Total", value: order.total },
-            ].map((row) => (
-              <div key={row.label} className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: "#F8FAFC" }}>
-                <span style={{ color: "#FF8C00", marginTop: "2px", flexShrink: 0 }}>{row.icon}</span>
-                <div>
-                  <p className="text-xs" style={{ color: "#94A3B8" }}>{row.label}</p>
-                  <p className="text-sm" style={{ color: "#0F172A", fontWeight: 500 }}>{row.value}</p>
+    <div className="adm-modal-header">
+      <h2 className="adm-modal-title">{title}</h2>
+      <button className="adm-modal-close" onClick={onClose}><X size={20} /></button>
+    </div>
+  );
+}
+
+function IconBtn({ onClick, icon, danger = false }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`adm-icon-btn${danger ? " danger" : ""}`}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function EmptyRow({ cols, msg = "No data found." }) {
+  return (
+    <tr>
+      <td colSpan={cols} style={{ padding: "2.5rem", textAlign: "center", color: "#9ca3af", fontSize: "0.875rem" }}>
+        {msg}
+      </td>
+    </tr>
+  );
+}
+
+// ─── Loading Row ──────────────────────────────────────────────────────────────
+function LoadingRow({ cols }) {
+  return (
+    <tr>
+      <td colSpan={cols} style={{ padding: "2.5rem", textAlign: "center" }}>
+        <span className="adm-spinner" />
+      </td>
+    </tr>
+  );
+}
+
+// ─── Overview Tab ─────────────────────────────────────────────────────────────
+function OverviewTab({ 
+  loading, 
+  error,
+  statCards, 
+  myActiveOrders, 
+  claimableOrders, 
+  setTab, 
+  setViewOrder, 
+  handleAccept, 
+  handleDelivered, 
+  actionLoading 
+}) {
+  return (
+    <div className="adm-space-6">
+      {/* Header */}
+      <div>
+        <h1 className="adm-section-title">Dashboard Overview</h1>
+        <p className="adm-section-sub">Welcome back. Track and claim customer shipments.</p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="adm-stats-grid">
+        {loading
+          ? [0, 1, 2, 3].map(i => (
+              <div key={i} className="adm-stat-card" style={{ minHeight: 120 }}>
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 80 }}>
+                  <span className="adm-spinner" />
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="px-6 pb-5">
-          <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm font-semibold cursor-pointer text-white"
-            style={{ backgroundColor: "#FF8C00", border: "none" }}>Close</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DeleteConfirm({ onConfirm, onCancel }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)" }}>
-      <div className="w-full max-w-xs rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: "#ffffff" }}>
-        <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: "#FEF2F2" }}>
-            <Trash2 size={22} style={{ color: "#EF4444" }} />
-          </div>
-          <h3 style={{ fontWeight: 700, color: "#0F172A", marginBottom: "0.4rem" }}>Delete Notification</h3>
-          <p className="text-sm" style={{ color: "#64748B" }}>Are you sure you want to delete this notification?</p>
-        </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer border"
-            style={{ backgroundColor: "transparent", borderColor: "#E2E8F0", color: "#64748B" }}>Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer text-white"
-            style={{ backgroundColor: "#EF4444", border: "none" }}>Delete</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ClearAllConfirm({ onConfirm, onCancel }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)" }}>
-      <div className="w-full max-w-xs rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: "#ffffff" }}>
-        <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: "#FFF3E0" }}>
-            <Trash2 size={22} style={{ color: "#FF8C00" }} />
-          </div>
-          <h3 style={{ fontWeight: 700, color: "#0F172A", marginBottom: "0.4rem" }}>Clear All Notifications</h3>
-          <p className="text-sm" style={{ color: "#64748B" }}>This will permanently remove all notifications.</p>
-        </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer border"
-            style={{ backgroundColor: "transparent", borderColor: "#E2E8F0", color: "#64748B" }}>Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer text-white"
-            style={{ backgroundColor: "#FF8C00", border: "none" }}>Clear All</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const DeliverDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
-  const [orders] = useState(INIT_ORDERS);
-  const [notifications, setNotifications] = useState(INIT_NOTIFICATIONS);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [deleteModal, setDeleteModal] = useState(null);
-  const [clearAllModal, setClearAllModal] = useState(false);
-  const [replyInput, setReplyInput] = useState({});
-  const [notifFilter, setNotifFilter] = useState("all");
-
-  const totalOrders = orders.length;
-  const pendingOrders = orders.filter((o) => o.status === "pending").length;
-  const deliveredOrders = orders.filter((o) => o.status === "delivered").length;
-  const unreadCount = notifications.filter((n) => n.status === "unread").length;
-
-  const filteredNotifs = notifications.filter(
-    (n) => notifFilter === "all" || n.status === notifFilter
-  );
-
-  const tabs = [
-    { id: "overview", label: "Overview", icon: <BarChart2 size={16} /> },
-    { id: "orders", label: "Orders", icon: <Truck size={16} /> },
-    { id: "notifications", label: "Notifications", icon: <Bell size={16} /> },
-  ];
-
-  const markRead = (id) =>
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id && n.status === "unread" ? { ...n, status: "read" } : n))
-    );
-
-  const archiveNotif = (id) =>
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: "archived" } : n))
-    );
-
-  const deleteNotif = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    setDeleteModal(null);
-  };
-
-  const sendReply = (id) => {
-    if (!replyInput[id]?.trim()) return;
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: "replied" } : n))
-    );
-    setReplyInput((prev) => ({ ...prev, [id]: "" }));
-  };
-
-  const orderStatusBadge = (status) => {
-    const map = {
-      pending: { bg: "#FFF3E0", color: "#FF8C00", label: "Pending" },
-      in_transit: { bg: "#EFF6FF", color: "#2563EB", label: "In Transit" },
-      delivered: { bg: "#F0FDF4", color: "#16A34A", label: "Delivered" },
-    };
-    const s = map[status] || map.pending;
-    return (
-      <span className="text-xs font-semibold px-3 py-1 rounded-full"
-        style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
-    );
-  };
-
-  const notifStatusBadge = (status) => {
-    const map = {
-      unread: { bg: "#FFF3E0", color: "#FF8C00" },
-      read: { bg: "#F0FDF4", color: "#16A34A" },
-      replied: { bg: "#EFF6FF", color: "#2563EB" },
-      archived: { bg: "#F8FAFC", color: "#64748B" },
-    };
-    const s = map[status] || map.read;
-    return (
-      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize"
-        style={{ backgroundColor: s.bg, color: s.color }}>{status}</span>
-    );
-  };
-
-  return (
-    <div className="min-h-screen" style={{ backgroundColor: "#F1F5F9" }}>
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 style={{ fontWeight: 800, fontSize: "1.625rem", color: "#0F172A", fontFamily: "Montserrat, Inter, sans-serif" }}>
-            Delivery Dashboard
-          </h1>
-          <p style={{ color: "#64748B", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-            Manage your assigned delivery orders.
-          </p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl mb-6 w-fit" style={{ backgroundColor: "#E2E8F0" }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all"
-              style={{
-                backgroundColor: activeTab === tab.id ? "#ffffff" : "transparent",
-                color: activeTab === tab.id ? "#FF8C00" : "#64748B",
-                border: "none",
-                boxShadow: activeTab === tab.id ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-              }}>
-              {tab.icon}
-              {tab.label}
-              {tab.id === "notifications" && unreadCount > 0 && (
-                <span className="w-5 h-5 rounded-full text-xs text-white flex items-center justify-center"
-                  style={{ backgroundColor: "#FF8C00", fontWeight: 700 }}>
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Overview */}
-        {activeTab === "overview" && (
-          <div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-              <StatCard icon={<Package size={22} />} label="Total Orders" value={totalOrders} color="#2563EB" bg="#EFF6FF" />
-              <StatCard icon={<Clock size={22} />} label="Pending" value={pendingOrders} color="#FF8C00" bg="#FFF3E0" />
-              <StatCard icon={<CheckCircle size={22} />} label="Delivered" value={deliveredOrders} color="#16A34A" bg="#F0FDF4" />
-            </div>
-
-            <div className="rounded-2xl shadow-sm overflow-hidden"
-              style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.06)" }}>
-              <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(15,23,42,0.06)" }}>
-                <h2 style={{ fontWeight: 700, color: "#0F172A", fontSize: "1rem" }}>Recent Orders</h2>
+            ))
+          : statCards.map(({ label, value, change, up, Icon }) => (
+              <div key={label} className="adm-stat-card">
+                <div className="adm-stat-header">
+                  <span className="adm-stat-label">{label}</span>
+                  <div className="adm-stat-icon"><Icon size={18} /></div>
+                </div>
+                <div className="adm-stat-value">{value}</div>
+                <div className={`adm-stat-change ${up ? "up" : "down"}`}>
+                  {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                  {change}
+                </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(15,23,42,0.06)" }}>
-                      {["Order ID", "Customer", "Destination", "Total", "Status"].map((h) => (
-                        <th key={h} className="px-6 py-3 text-left text-xs uppercase tracking-wider"
-                          style={{ color: "#94A3B8", fontWeight: 600 }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.slice(0, 4).map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50 transition-colors"
-                        style={{ borderBottom: "1px solid rgba(15,23,42,0.04)" }}>
-                        <td className="px-6 py-4 text-sm" style={{ color: "#94A3B8", fontWeight: 500 }}>{order.id}</td>
-                        <td className="px-6 py-4 text-sm" style={{ color: "#0F172A", fontWeight: 600 }}>{order.customer}</td>
-                        <td className="px-6 py-4 text-sm" style={{ color: "#334155" }}>{order.destination}</td>
-                        <td className="px-6 py-4 text-sm" style={{ color: "#0F172A", fontWeight: 600 }}>{order.total}</td>
-                        <td className="px-6 py-4">{orderStatusBadge(order.status)}</td>
+            ))
+        }
+      </div>
+
+      {error && <p style={{ color: "#ef4444", fontSize: "0.875rem" }}>{error}</p>}
+
+      {/* Active Shipments Card */}
+      <div className="adm-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem 1.25rem 0.75rem", borderBottom: "1px solid #f3f4f6" }}>
+          <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "#111827" }}>My Active Shipments</h2>
+          <button className="adm-view-all" onClick={() => setTab("orders")}>
+            View all <ExternalLink size={12} />
+          </button>
+        </div>
+        <div className="adm-table-scroll">
+          <table className="adm-table" style={{ minWidth: 600 }}>
+            <thead>
+              <tr>
+                {["Order ID", "Customer & Address", "Total", "Status", "Date", "Actions"].map(h => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading
+                ? <LoadingRow cols={6} />
+                : myActiveOrders.length === 0
+                ? <EmptyRow cols={6} msg="No active shipments." />
+                : myActiveOrders.slice(0, 5).map(o => {
+                    const id = o.id ?? o._id;
+                    const customer = o.customer_username ?? "—";
+                    const address = o.customer_address ?? "No address provided";
+                    const total = Number(o.total_price ?? 0).toFixed(2);
+                    const formattedDate = o.created_at
+                      ? new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                      : "—";
+
+                    return (
+                      <tr key={id}>
+                        <td className="adm-td-mono">{id}</td>
+                        <td>
+                          <div style={{ fontWeight: 600, color: "#111827", fontSize: "0.875rem" }}>{customer}</div>
+                          <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{address}</div>
+                        </td>
+                        <td style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>{total} FCFA</td>
+                        <td><span className={orderStatusBadge(o.status)}>{o.status}</span></td>
+                        <td style={{ color: "#6b7280", fontSize: "0.75rem" }}>{formattedDate}</td>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <IconBtn icon={<Eye size={13} />} onClick={() => setViewOrder(o)} />
+                            <button
+                              onClick={() => handleDelivered(id)}
+                              className="adm-btn-primary"
+                              style={{ padding: "4px 8px !important", fontSize: "0.75rem !important", backgroundColor: "#10b981", height: "26px", border: "none" }}
+                              disabled={actionLoading}
+                            >
+                              Deliver
+                            </button>
+                          </div>
+                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+                    );
+                  })
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        {/* Orders Tab */}
-        {activeTab === "orders" && (
-          <div className="rounded-2xl shadow-sm overflow-hidden"
-            style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.06)" }}>
-            <div className="px-6 py-4 border-b flex items-center justify-between"
-              style={{ borderColor: "rgba(15,23,42,0.06)" }}>
-              <h2 style={{ fontWeight: 700, color: "#0F172A", fontSize: "1rem" }}>Assigned Orders</h2>
-              <span className="text-sm" style={{ color: "#64748B" }}>{orders.length} total</span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(15,23,42,0.06)", backgroundColor: "#F8FAFC" }}>
-                    {["Order ID", "Customer", "Destination", "Items", "Total", "Date", "Status", "Action"].map((h) => (
-                      <th key={h} className="px-5 py-3 text-left text-xs uppercase tracking-wider"
-                        style={{ color: "#94A3B8", fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50 transition-colors"
-                      style={{ borderBottom: "1px solid rgba(15,23,42,0.04)" }}>
-                      <td className="px-5 py-4 text-xs" style={{ color: "#94A3B8", fontWeight: 500 }}>{order.id}</td>
-                      <td className="px-5 py-4 text-sm" style={{ color: "#0F172A", fontWeight: 600 }}>{order.customer}</td>
-                      <td className="px-5 py-4 text-sm" style={{ color: "#334155", maxWidth: "8rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{order.destination}</td>
-                      <td className="px-5 py-4 text-xs" style={{ color: "#64748B", maxWidth: "8rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{order.items}</td>
-                      <td className="px-5 py-4 text-sm" style={{ color: "#0F172A", fontWeight: 600 }}>{order.total}</td>
-                      <td className="px-5 py-4 text-sm" style={{ color: "#64748B" }}>{order.date}</td>
-                      <td className="px-5 py-4">{orderStatusBadge(order.status)}</td>
-                      <td className="px-5 py-4">
-                        <button
-                          onClick={() => setSelectedOrder(order)}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-white transition-all"
-                          style={{ backgroundColor: "#0F172A", border: "none" }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#334155")}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0F172A")}>
-                          <Eye size={12} /> View
-                        </button>
+      {/* Available Claims Card */}
+      <div className="adm-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem 1.25rem 0.75rem", borderBottom: "1px solid #f3f4f6" }}>
+          <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "#111827" }}>Available Claims</h2>
+          <button className="adm-view-all" onClick={() => setTab("orders")}>
+            View all <ExternalLink size={12} />
+          </button>
+        </div>
+        <div className="adm-table-scroll">
+          <table className="adm-table" style={{ minWidth: 600 }}>
+            <thead>
+              <tr>
+                {["Order ID", "Customer & Address", "Total", "Status", "Date", "Actions"].map(h => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading
+                ? <LoadingRow cols={6} />
+                : claimableOrders.length === 0
+                ? <EmptyRow cols={6} msg="No claimable orders available." />
+                : claimableOrders.slice(0, 5).map(o => {
+                    const id = o.id ?? o._id;
+                    const customer = o.customer_username ?? "—";
+                    const address = o.customer_address ?? "No address provided";
+                    const total = Number(o.total_price ?? 0).toFixed(2);
+                    const formattedDate = o.created_at
+                      ? new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                      : "—";
+
+                    return (
+                      <tr key={id}>
+                        <td className="adm-td-mono">{id}</td>
+                        <td>
+                          <div style={{ fontWeight: 600, color: "#111827", fontSize: "0.875rem" }}>{customer}</div>
+                          <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{address}</div>
+                        </td>
+                        <td style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>{total} FCFA</td>
+                        <td><span className={orderStatusBadge(o.status)}>{o.status}</span></td>
+                        <td style={{ color: "#6b7280", fontSize: "0.75rem" }}>{formattedDate}</td>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <IconBtn icon={<Eye size={13} />} onClick={() => setViewOrder(o)} />
+                            <button
+                              onClick={() => handleAccept(id)}
+                              className="adm-btn-primary"
+                              style={{ padding: "4px 8px !important", fontSize: "0.75rem !important", backgroundColor: "#f59e0b", height: "26px", border: "none" }}
+                              disabled={actionLoading}
+                            >
+                              Claim
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Orders Tab ───────────────────────────────────────────────────────────────
+function OrdersTab({
+  loading,
+  filteredOrders,
+  searchQuery,
+  setSearchQuery,
+  filterStatus,
+  setFilterStatus,
+  setViewOrder,
+  handleAccept,
+  handleDelivered,
+  actionLoading,
+  username
+}) {
+  return (
+    <div className="adm-space-5">
+      {/* Header controls */}
+      <div className="adm-page-header">
+        <div>
+          <h1 className="adm-section-title">Order Management</h1>
+          <p className="adm-section-sub">Track and claim customer shipments.</p>
+        </div>
+        <div className="adm-page-controls">
+          <div className="adm-search-wrap">
+            <span className="adm-search-icon"><Search size={14} /></span>
+            <input
+              className="adm-search-input"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search orders..."
+            />
+          </div>
+          <select 
+            className="adm-filter-select" 
+            value={filterStatus} 
+            onChange={e => setFilterStatus(e.target.value)}
+          >
+            {["All Statuses", "Pending", "In Progress", "Delivered"].map(s => (
+              <option key={s} value={s.toLowerCase()}>{s}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Main Table */}
+      <div className="adm-table-wrap">
+        <div className="adm-table-scroll">
+          <table className="adm-table" style={{ minWidth: 740 }}>
+            <thead>
+              <tr>
+                {["Order ID", "Customer", "Agent", "Total", "Status", "Date", "Actions"].map(h => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <LoadingRow cols={7} />
+              ) : filteredOrders.length === 0 ? (
+                <EmptyRow cols={7} msg="No orders found." />
+              ) : (
+                filteredOrders.map(order => {
+                  const id = order.id ?? order._id;
+                  const isMe = order.assigned_agent === "You" || order.assigned_agent === username;
+                  const isUnassigned = !order.assigned_agent;
+                  const total = Number(order.total_price ?? 0).toFixed(2);
+                  const formattedDate = order.created_at
+                    ? new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                    : "—";
+                  
+                  return (
+                    <tr key={id}>
+                      <td className="adm-td-mono">{id}</td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: "#111827", fontSize: "0.875rem" }}>{order.customer_username}</div>
+                        <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{order.customer_address || "No address provided"}</div>
+                      </td>
+                      <td style={{ fontSize: "0.875rem", color: "#4b5563" }}>
+                        {isMe ? (
+                          <span style={{ color: "#f59e0b", fontWeight: 600 }}>You</span>
+                        ) : isUnassigned ? (
+                          <span style={{ color: "#9ca3af", fontStyle: "italic" }}>Unassigned</span>
+                        ) : (
+                          order.assigned_agent
+                        )}
+                      </td>
+                      <td style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>{total} FCFA</td>
+                      <td>
+                        <span className={orderStatusBadge(order.status)}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{formattedDate}</td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <IconBtn icon={<Eye size={13} />} onClick={() => setViewOrder(order)} />
+                          
+                          {isUnassigned && order.status === "Pending" && (
+                            <button 
+                              onClick={() => handleAccept(id)} 
+                              className="adm-btn-primary" 
+                              style={{ padding: "4px 8px !important", fontSize: "0.75rem !important", backgroundColor: "#f59e0b", height: "26px", border: "none" }}
+                              disabled={actionLoading}
+                            >
+                              Claim
+                            </button>
+                          )}
+                          
+                          {isMe && order.status === "In Progress" && (
+                            <button 
+                              onClick={() => handleDelivered(id)} 
+                              className="adm-btn-primary" 
+                              style={{ padding: "4px 8px !important", fontSize: "0.75rem !important", backgroundColor: "#10b981", height: "26px", border: "none" }}
+                              disabled={actionLoading}
+                            >
+                              Deliver
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* Notifications Tab */}
-        {activeTab === "notifications" && (
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex gap-2 flex-wrap">
-                {["all", "unread", "read", "replied", "archived"].map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setNotifFilter(f)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all capitalize"
+// ─── Notifications Tab ────────────────────────────────────────────────────────
+function NotificationsTab({
+  notifications,
+  filter,
+  setFilter,
+  replyInputs,
+  setReplyInputs,
+  onMarkRead,
+  onReply,
+  onArchive,
+  onDelete,
+  onClearAll
+}) {
+  const unreadCount = notifications.filter(n => n.status === "unread").length;
+  
+  const filtered = notifications.filter(n => {
+    if (filter === "all") return n.status !== "archived"; // by default, don't show archived in 'all' list
+    return n.status === filter;
+  });
+
+  return (
+    <div className="adm-space-5">
+      {/* Header section */}
+      <div>
+        <h1 className="adm-section-title" style={{ marginBottom: "1.5rem" }}>Notifications Manager</h1>
+      </div>
+
+      {/* Filters & Actions Bar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {[
+            { key: "all", label: "All" },
+            { key: "unread", label: `Unread${unreadCount > 0 ? `  ${unreadCount}` : ""}` },
+            { key: "read", label: "Read" },
+            { key: "replied", label: "Replied" },
+            { key: "archived", label: "Archived" }
+          ].map(opt => {
+            const isActive = filter === opt.key;
+            return (
+              <button
+                key={opt.key}
+                onClick={() => setFilter(opt.key)}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: "9999px",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  border: isActive ? "none" : "1px solid #e5e7eb",
+                  backgroundColor: isActive ? "#f59e0b" : "#ffffff",
+                  color: isActive ? "#ffffff" : "#4b5563",
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {notifications.length > 0 && (
+          <button
+            onClick={onClearAll}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 14px",
+              backgroundColor: "#ef4444",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "0.8125rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "background-color 0.15s"
+            }}
+            onMouseOver={e => e.currentTarget.style.backgroundColor = "#dc2626"}
+            onMouseOut={e => e.currentTarget.style.backgroundColor = "#ef4444"}
+          >
+            <Trash2 size={14} /> Clear All
+          </button>
+        )}
+      </div>
+
+      {/* Notifications List */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {filtered.length === 0 ? (
+          <div className="adm-card" style={{ padding: "3rem", textAlign: "center", color: "#9ca3af", fontSize: "0.875rem" }}>
+            No notifications in this category.
+          </div>
+        ) : (
+          filtered.map(n => {
+            const isUnread = n.status === "unread";
+            
+            // Badge color scheme
+            let badgeBg = "#f3f4f6";
+            let badgeColor = "#4b5563";
+            if (n.status === "unread") { badgeBg = "#ffedd5"; badgeColor = "#ea580c"; }
+            else if (n.status === "read") { badgeBg = "#dcfce7"; badgeColor = "#16a34a"; }
+            else if (n.status === "replied") { badgeBg = "#dbeafe"; badgeColor = "#2563eb"; }
+            else if (n.status === "archived") { badgeBg = "#e5e7eb"; badgeColor = "#4b5563"; }
+
+            return (
+              <div
+                key={n.id}
+                style={{
+                  border: isUnread ? "1px solid #fde68a" : "1px solid #e5e7eb",
+                  borderRadius: "12px",
+                  padding: "1.25rem",
+                  backgroundColor: isUnread ? "#fffbeb" : "#ffffff",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.875rem",
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                  transition: "all 0.15s"
+                }}
+              >
+                {/* Header info */}
+                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                  {/* Left Circle Icon */}
+                  <div
                     style={{
-                      backgroundColor: notifFilter === f ? "#FF8C00" : "#ffffff",
-                      color: notifFilter === f ? "white" : "#64748B",
-                      border: `1px solid ${notifFilter === f ? "#FF8C00" : "#E2E8F0"}`,
-                    }}>
-                    {f}
-                    {f === "unread" && unreadCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs"
-                        style={{ backgroundColor: "rgba(255,255,255,0.3)" }}>{unreadCount}</span>
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      backgroundColor: isUnread ? "#fff7ed" : "#f3f4f6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0
+                    }}
+                  >
+                    <Truck size={18} style={{ color: isUnread ? "#f97316" : "#9ca3af" }} />
+                  </div>
+
+                  {/* Text Content */}
+                  <div style={{ flexGrow: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+                      <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#111827", margin: 0 }}>
+                        {n.title}
+                      </h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+                        <span
+                          style={{
+                            fontSize: "0.6875rem",
+                            fontWeight: 700,
+                            padding: "3px 8px",
+                            borderRadius: "9999px",
+                            textTransform: "uppercase",
+                            backgroundColor: badgeBg,
+                            color: badgeColor
+                          }}
+                        >
+                          {n.status}
+                        </span>
+                        <span style={{ fontSize: "0.8125rem", color: "#9ca3af" }}>{n.time}</span>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: "0.875rem", color: "#4b5563", margin: "4px 0 0 0", lineHeight: "1.4" }}>
+                      {n.message}
+                    </p>
+
+                    {/* Show typed reply */}
+                    {n.replyText && (
+                      <div
+                        style={{
+                          marginTop: "0.75rem",
+                          padding: "0.5rem 0.75rem",
+                          backgroundColor: "#f9fafb",
+                          borderRadius: "6px",
+                          fontSize: "0.8125rem",
+                          color: "#374151",
+                          borderLeft: "3px solid #2563eb",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px"
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, color: "#1e3a8a" }}>Your Reply:</span>
+                        <span>{n.replyText}</span>
+                      </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Actions sub-row */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderTop: "1px solid #f3f4f6", paddingTop: "0.75rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Write a reply..."
+                    value={replyInputs[n.id] || ""}
+                    onChange={e => setReplyInputs(prev => ({ ...prev, [n.id]: e.target.value }))}
+                    style={{
+                      height: "34px",
+                      borderRadius: "9999px",
+                      border: "1px solid #d1d5db",
+                      padding: "0 1rem",
+                      fontSize: "0.8125rem",
+                      color: "#374151",
+                      backgroundColor: "#ffffff",
+                      flexGrow: 1,
+                      outline: "none"
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") onReply(n.id);
+                    }}
+                  />
+
+                  <button
+                    onClick={() => onReply(n.id)}
+                    style={{
+                      height: "34px",
+                      padding: "0 1rem",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "9999px",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      transition: "background-color 0.15s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#1d4ed8"}
+                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#2563eb"}
+                  >
+                    <Reply size={13} /> Reply
                   </button>
-                ))}
+
+                  {isUnread && (
+                    <button
+                      onClick={() => onMarkRead(n.id)}
+                      style={{
+                        height: "34px",
+                        padding: "0 0.875rem",
+                        backgroundColor: "transparent",
+                        border: "1px solid #10b981",
+                        color: "#10b981",
+                        borderRadius: "8px",
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        transition: "all 0.15s"
+                      }}
+                      onMouseOver={e => {
+                        e.currentTarget.style.backgroundColor = "#ecfdf5";
+                      }}
+                      onMouseOut={e => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <CheckCircle size={13} /> Read
+                    </button>
+                  )}
+
+                  {n.status !== "archived" && (
+                    <button
+                      onClick={() => onArchive(n.id)}
+                      style={{
+                        height: "34px",
+                        padding: "0 0.875rem",
+                        backgroundColor: "transparent",
+                        border: "1px solid #d1d5db",
+                        color: "#4b5563",
+                        borderRadius: "8px",
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        transition: "all 0.15s"
+                      }}
+                      onMouseOver={e => {
+                        e.currentTarget.style.backgroundColor = "#f9fafb";
+                      }}
+                      onMouseOut={e => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <Archive size={13} /> Archive
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => onDelete(n.id)}
+                    style={{
+                      height: "34px",
+                      width: "34px",
+                      backgroundColor: "#fef2f2",
+                      color: "#ef4444",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "background-color 0.15s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#fef2f2"}
+                    title="Delete Notification"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
-              <button onClick={() => setClearAllModal(true)}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-white"
-                style={{ backgroundColor: "#EF4444", border: "none" }}>
-                <Trash2 size={12} /> Clear All
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+export default function DeliverDashboard() {
+  const [orders, setOrders] = useState([]);
+  const [viewOrder, setViewOrder] = useState(null);
+  const [tab, setTab] = useState("overview");
+  
+  // Search & Filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all statuses");
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  // Local static/interactive Notifications state
+  const [localNotifications, setLocalNotifications] = useState([
+    {
+      id: "ORD-101",
+      title: "New Order ORD-101 Assigned",
+      message: "Order ORD-101 from Sarah Chen has been assigned to you.",
+      status: "unread",
+      time: "30m ago",
+      replyText: ""
+    },
+    {
+      id: "ORD-104",
+      title: "New Order ORD-104 Assigned",
+      message: "Order ORD-104 from James Wilson requires delivery today.",
+      status: "unread",
+      time: "1h ago",
+      replyText: ""
+    },
+    {
+      id: "ORD-102",
+      title: "Order ORD-102 In Transit",
+      message: "ORD-102 has been picked up and is now in transit.",
+      status: "read",
+      time: "3h ago",
+      replyText: ""
+    },
+    {
+      id: "ORD-103",
+      title: "Order ORD-103 Delivered",
+      message: "ORD-103 was successfully delivered to Emily Davis.",
+      status: "replied",
+      time: "1d ago",
+      replyText: ""
+    },
+    {
+      id: "route-update",
+      title: "Route Update: Downtown",
+      message: "Traffic delay on Oak Street. Consider alternate route.",
+      status: "archived",
+      time: "2d ago",
+      replyText: ""
+    }
+  ]);
+  const [notifFilter, setNotifFilter] = useState("all");
+  const [replyInputs, setReplyInputs] = useState({});
+
+  // Mobile menu open
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const token = localStorage.getItem("access");
+  const username = localStorage.getItem("username") || "Guest";
+  const profilePic = localStorage.getItem("profile_picture");
+
+  const userRef = useRef(null);
+
+  // Fetch all orders
+  const fetchOrders = async () => {
+    if (!token) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await apiFetch("/api/shop/delivery/orders/");
+      setOrders(data);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+      setError("Failed to load delivery orders. Please check backend connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const handleAccept = async (orderId) => {
+    setActionLoading(true);
+    try {
+      await apiFetch(`/api/shop/delivery/orders/${orderId}/assign/`, {
+        method: "PATCH",
+      });
+
+      // Local state update
+      setOrders((prev) =>
+        prev.map((order) => {
+          const id = order.id ?? order._id;
+          return id === orderId
+            ? { ...order, assigned_agent: username, status: "In Progress" }
+            : order;
+        })
+      );
+    } catch (err) {
+      console.error("Error assigning order:", err);
+      alert("Failed to claim order. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDelivered = async (orderId) => {
+    setActionLoading(true);
+    try {
+      await apiFetch(`/api/shop/delivery/orders/${orderId}/deliver/`, {
+        method: "PATCH",
+      });
+
+      // Local state update
+      setOrders((prev) =>
+        prev.map((order) => {
+          const id = order.id ?? order._id;
+          return id === orderId ? { ...order, status: "Delivered" } : order;
+        })
+      );
+    } catch (err) {
+      console.error("Error marking order delivered:", err);
+      alert("Failed to update status. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Local notifications operations
+  const handleLocalMarkRead = (id) => {
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "read" } : n));
+  };
+
+  const handleLocalReply = (id) => {
+    const text = replyInputs[id];
+    if (!text || !text.trim()) return;
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "replied", replyText: text } : n));
+    setReplyInputs(prev => ({ ...prev, [id]: "" }));
+  };
+
+  const handleLocalArchive = (id) => {
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "archived" } : n));
+  };
+
+  const handleLocalDelete = (id) => {
+    setLocalNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleLocalClearAll = () => {
+    setLocalNotifications([]);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    localStorage.removeItem("username");
+    localStorage.removeItem("profile_picture");
+    localStorage.removeItem("role");
+    window.location.href = "/login";
+  };
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const clickOutside = (e) => {
+      if (userRef.current && !userRef.current.contains(e.target)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", clickOutside);
+    return () => document.removeEventListener("mousedown", clickOutside);
+  }, []);
+
+  // Card counts
+  const availableClaims = orders.filter((o) => !o.assigned_agent && o.status === "Pending").length;
+  const inprogressOrders = orders.filter((o) => (o.assigned_agent === "You" || o.assigned_agent === username) && o.status === "In Progress").length;
+  const completedOrders = orders.filter((o) => (o.assigned_agent === "You" || o.assigned_agent === username) && o.status === "Delivered").length;
+  const totalAssigned = orders.filter((o) => (o.assigned_agent === "You" || o.assigned_agent === username)).length;
+
+  const myActiveOrders = orders.filter((o) => (o.assigned_agent === "You" || o.assigned_agent === username) && o.status === "In Progress");
+  const claimableOrders = orders.filter((o) => !o.assigned_agent && o.status === "Pending");
+
+  // Search & filter logic
+  const filteredOrders = orders.filter(order => {
+    const isMe = order.assigned_agent === "You" || order.assigned_agent === username;
+    const isUnassigned = !order.assigned_agent;
+    
+    // Status filter
+    if (filterStatus === "pending" && (!isUnassigned || order.status !== "Pending")) return false;
+    if (filterStatus === "in progress" && (!isMe || order.status !== "In Progress")) return false;
+    if (filterStatus === "delivered" && (!isMe || order.status !== "Delivered")) return false;
+
+    // Search query
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+    
+    const idMatches = `ord-${order.id}`.includes(query) || String(order.id).includes(query);
+    const customerMatches = (order.customer_username || "").toLowerCase().includes(query);
+    const addressMatches = (order.customer_address || "").toLowerCase().includes(query);
+
+    return idMatches || customerMatches || addressMatches;
+  });
+
+  const statCards = [
+    {
+      label: "AVAILABLE CLAIMS",
+      value: String(availableClaims),
+      change: "Pending unassigned", up: true, Icon: Package,
+    },
+    {
+      label: "MY IN PROGRESS",
+      value: String(inprogressOrders),
+      change: "Active shipments", up: true, Icon: Truck,
+    },
+    {
+      label: "MY COMPLETED",
+      value: String(completedOrders),
+      change: "Delivered", up: true, Icon: CheckCircle,
+    },
+    {
+      label: "TOTAL ASSIGNED",
+      value: String(totalAssigned),
+      change: "All my claims", up: true, Icon: ShoppingCart,
+    },
+  ];
+
+  const TABS = [
+    { key: "overview",      label: "Overview",      Icon: BarChart2 },
+    { key: "orders",        label: "Orders",        Icon: ShoppingCart },
+    { key: "notifications", label: "Notifications", Icon: Bell },
+  ];
+
+  // Dynamic unread notifications count for badge
+  const unreadCount = localNotifications.filter(n => n.status === "unread").length;
+
+  return (
+    <div className="adm-scope">
+      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
+      <header className="adm-navbar">
+        <div className="adm-navbar-inner">
+          <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+            <span className="adm-logo" style={{ cursor: "pointer" }} onClick={() => window.location.href = "/"}>MATERIX</span>
+            <nav>
+              <ul className="adm-nav-links">
+                {[
+                  { label: "Home", href: "/" },
+                  { label: "Our Products", href: "/#products-section" },
+                  { label: "Our Services", href: "/#services-section" },
+                  { label: "About", href: "/#about-section" }
+                ].map(item => (
+                  <li key={item.label}>
+                    <a href={item.href}>{item.label}</a>
+                  </li>
+                ))}
+                <li><span className="adm-active">Dashboard</span></li>
+              </ul>
+            </nav>
+          </div>
+
+          <div className="adm-nav-right">
+            {/* Notification Bell Icon */}
+            <div style={{ position: "relative" }}>
+              <button className="adm-bell-btn" onClick={() => setTab("notifications")}>
+                <Bell size={16} />
+                {unreadCount > 0 && <span className="adm-notif-dot">{unreadCount}</span>}
               </button>
             </div>
 
-            <div className="rounded-2xl shadow-sm overflow-hidden"
-              style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.06)" }}>
-              {filteredNotifs.length === 0 ? (
-                <div className="text-center py-12" style={{ color: "#94A3B8" }}>
-                  <Bell size={36} style={{ margin: "0 auto 0.75rem", opacity: 0.4 }} />
-                  <p className="text-sm">No {notifFilter !== "all" ? notifFilter : ""} notifications</p>
+            {/* Profile Dropdown Chip */}
+            <div className="adm-user-chip" ref={userRef} style={{ position: "relative" }}>
+              <div 
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)} 
+                style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}
+              >
+                <span>{username}</span>
+                <div className="adm-avatar" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {profilePic ? <img src={profilePic} alt="profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={13} />}
                 </div>
-              ) : (
-                filteredNotifs.map((notif, idx) => (
-                  <div key={notif.id} className="p-5 transition-colors"
-                    style={{
-                      borderBottom: idx < filteredNotifs.length - 1 ? "1px solid rgba(15,23,42,0.05)" : "none",
-                      backgroundColor: notif.status === "unread" ? "#FFFBF0" : "transparent",
-                    }}>
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: notif.status === "unread" ? "#FFF3E0" : "#F8FAFC" }}>
-                        <Truck size={18} style={{ color: notif.status === "unread" ? "#FF8C00" : "#94A3B8" }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <div>
-                            <p style={{ fontWeight: 600, fontSize: "0.875rem", color: "#0F172A" }}>{notif.title}</p>
-                            <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>{notif.body}</p>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {notifStatusBadge(notif.status)}
-                            <span className="text-xs" style={{ color: "#94A3B8" }}>{notif.time}</span>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex gap-2 flex-wrap">
-                          <input
-                            className="flex-1 min-w-32 px-3 py-1.5 rounded-lg text-xs outline-none border"
-                            style={{ borderColor: "#E2E8F0", color: "#334155" }}
-                            placeholder="Write a reply..."
-                            value={replyInput[notif.id] || ""}
-                            onChange={(e) => setReplyInput((prev) => ({ ...prev, [notif.id]: e.target.value }))}
-                          />
-                          <button onClick={() => sendReply(notif.id)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-white"
-                            style={{ backgroundColor: "#2563EB", border: "none" }}>
-                            <Reply size={11} /> Reply
-                          </button>
-                          {notif.status === "unread" && (
-                            <button onClick={() => markRead(notif.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
-                              style={{ backgroundColor: "#F0FDF4", color: "#16A34A", border: "none" }}>
-                              <Check size={11} /> Read
-                            </button>
-                          )}
-                          {notif.status !== "archived" && (
-                            <button onClick={() => archiveNotif(notif.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
-                              style={{ backgroundColor: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" }}>
-                              <Archive size={11} /> Archive
-                            </button>
-                          )}
-                          <button onClick={() => setDeleteModal(notif.id)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
-                            style={{ backgroundColor: "#FEF2F2", color: "#EF4444", border: "none" }}>
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
-                      </div>
+                <ChevronDown size={13} style={{ transform: userDropdownOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+              </div>
+              
+              {userDropdownOpen && (
+                <div style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "100%",
+                  marginTop: "0.5rem",
+                  backgroundColor: "#1f2937",
+                  border: "1px solid #374151",
+                  borderRadius: "0.375rem",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  zIndex: 50,
+                  minWidth: "150px",
+                  overflow: "hidden"
+                }}>
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    <li 
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        window.location.href = "/profile";
+                      }} 
+                      style={{
+                        padding: "0.5rem 1rem",
+                        color: "#d1d5db",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        transition: "background-color 0.15s, color 0.15s"
+                      }}
+                      className="adm-dropdown-item"
+                    >
+                      Profile
+                    </li>
+                    <li 
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        window.location.href = "/pack";
+                      }} 
+                      style={{
+                        padding: "0.5rem 1rem",
+                        color: "#d1d5db",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        transition: "background-color 0.15s, color 0.15s"
+                      }}
+                      className="adm-dropdown-item"
+                    >
+                      Signup
+                    </li>
+                    <li 
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        handleLogout();
+                      }} 
+                      style={{
+                        padding: "0.5rem 1rem",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        borderTop: "1px solid #374151",
+                        transition: "background-color 0.15s, color 0.15s"
+                      }}
+                      className="adm-dropdown-item"
+                    >
+                      Logout
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <button className="adm-mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>
+              <Menu size={20} />
+            </button>
+          </div>
+        </div>
+
+        {mobileOpen && (
+          <div className="adm-mobile-menu">
+            {["Home", "Our Products", "Our Services", "About", "Dashboard"].map(n => (
+              <a key={n} href="#">{n}</a>
+            ))}
+          </div>
+        )}
+      </header>
+
+      {/* ── Tab Bar ────────────────────────────────────────────────────────── */}
+      <div className="adm-tabbar">
+        <div className="adm-tabbar-inner">
+          {TABS.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              className={`adm-tab-btn${tab === key ? " active" : ""}`}
+              onClick={() => setTab(key)}
+            >
+              <Icon size={14} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Content ────────────────────────────────────────────────────────── */}
+      <main className="adm-main">
+        {tab === "overview" && (
+          <OverviewTab 
+            loading={loading}
+            error={error}
+            statCards={statCards}
+            myActiveOrders={myActiveOrders}
+            claimableOrders={claimableOrders}
+            setTab={setTab}
+            setViewOrder={setViewOrder}
+            handleAccept={handleAccept}
+            handleDelivered={handleDelivered}
+            actionLoading={actionLoading}
+          />
+        )}
+
+        {tab === "orders" && (
+          <OrdersTab 
+            loading={loading}
+            filteredOrders={filteredOrders}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            setViewOrder={setViewOrder}
+            handleAccept={handleAccept}
+            handleDelivered={handleDelivered}
+            actionLoading={actionLoading}
+            username={username}
+          />
+        )}
+
+        {tab === "notifications" && (
+          <NotificationsTab 
+            notifications={localNotifications}
+            filter={notifFilter}
+            setFilter={setNotifFilter}
+            replyInputs={replyInputs}
+            setReplyInputs={setReplyInputs}
+            onMarkRead={handleLocalMarkRead}
+            onReply={handleLocalReply}
+            onArchive={handleLocalArchive}
+            onDelete={handleLocalDelete}
+            onClearAll={handleLocalClearAll}
+          />
+        )}
+      </main>
+
+      {/* ── Details Modal ─────────────────────────────────────────────────── */}
+      <Modal open={!!viewOrder} onClose={() => setViewOrder(null)}>
+        {viewOrder && (
+          <div className="adm-modal-body">
+            <ModalHeader title={`Order Details`} onClose={() => setViewOrder(null)} />
+            
+            <div className="adm-space-4" style={{ marginBottom: "1.5rem" }}>
+              {[
+                ["Order ID", viewOrder.id],
+                ["Customer", viewOrder.customer_username],
+                ["Delivery Address", viewOrder.customer_address || "No address provided"],
+                ["Total Price", `${Number(viewOrder.total_price || 0).toFixed(2)} FCFA`],
+                ["Order Status", <span className={orderStatusBadge(viewOrder.status)}>{viewOrder.status}</span>],
+                ["Assigned Dispatcher", viewOrder.assigned_agent === "You" || viewOrder.assigned_agent === username ? (
+                  <span style={{ color: "#f59e0b", fontWeight: 600 }}>You</span>
+                ) : !viewOrder.assigned_agent ? (
+                  <span style={{ color: "#9ca3af", fontStyle: "italic" }}>Unassigned</span>
+                ) : (
+                  viewOrder.assigned_agent
+                )]
+              ].map(([k, v]) => (
+                <div key={k} className="adm-detail-row">
+                  <span className="adm-detail-key">{k}</span>
+                  <span className="adm-detail-val">{v}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Products List */}
+            {(viewOrder.items ?? []).length > 0 && (
+              <div style={{ marginTop: "1.25rem" }}>
+                <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.075em", marginBottom: "0.75rem" }}>Products List</p>
+                <div className="adm-space-2">
+                  {viewOrder.items.map((item, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.875rem" }}>
+                      <span style={{ color: "#374151" }}>{item.product_name} × {item.quantity ?? 1}</span>
+                      <span style={{ fontWeight: 600, color: "#111827" }}>{Number(item.price_at_purchase ?? 0).toFixed(2)} FCFA</span>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "2rem" }}>
+              <button className="adm-btn-secondary" onClick={() => setViewOrder(null)}>Close</button>
+              
+              {!viewOrder.assigned_agent && viewOrder.status === "Pending" && (
+                <button 
+                  className="adm-btn-primary" 
+                  onClick={() => {
+                    handleAccept(viewOrder.id);
+                    setViewOrder(null);
+                  }}
+                  style={{ border: "none" }}
+                  disabled={actionLoading}
+                >
+                  Accept Claim
+                </button>
+              )}
+
+              {(viewOrder.assigned_agent === "You" || viewOrder.assigned_agent === username) && viewOrder.status === "In Progress" && (
+                <button 
+                  className="adm-btn-primary" 
+                  onClick={() => {
+                    handleDelivered(viewOrder.id);
+                    setViewOrder(null);
+                  }}
+                  style={{ backgroundColor: "#10b981", border: "none" }}
+                  disabled={actionLoading}
+                >
+                  Mark Delivered
+                </button>
               )}
             </div>
           </div>
         )}
-      </div>
-
-      {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
-      {deleteModal && <DeleteConfirm onConfirm={() => deleteNotif(deleteModal)} onCancel={() => setDeleteModal(null)} />}
-      {clearAllModal && (
-        <ClearAllConfirm
-          onConfirm={() => { setNotifications([]); setClearAllModal(false); }}
-          onCancel={() => setClearAllModal(false)}
-        />
-      )}
+      </Modal>
     </div>
   );
-};
-
-export default DeliverDashboard;
+}

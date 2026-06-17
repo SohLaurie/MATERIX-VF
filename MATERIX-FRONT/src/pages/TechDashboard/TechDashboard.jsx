@@ -1,482 +1,1009 @@
-import React, { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
-  BarChart2, CheckCircle, XCircle, Clock, Bell, Inbox,
-  Check, X, Reply, Archive, Trash2, AlertTriangle,
+  BarChart2, CheckCircle, XCircle, Clock, Bell, ChevronDown, Search,
+  Eye, X, Reply, Archive, Trash2, AlertTriangle, Check, User, Menu,
+  MapPin, Calendar, Wrench, Inbox, TrendingUp, TrendingDown, ExternalLink
 } from "lucide-react";
-import Navbar from "../../components/Navbar";
+import "../../styles/admin-dashboard.css";
 
-const INIT_REQUESTS = [
-  { id: "REQ-001", client: "Sarah Mensah", service: "Electrical Installation", date: "Jun 16, 2026", location: "Downtown", status: "pending" },
-  { id: "REQ-002", client: "Paul Eze", service: "Wiring Repair", date: "Jun 15, 2026", location: "Westside", status: "pending" },
-  { id: "REQ-003", client: "Linda Nkosi", service: "Panel Upgrade", date: "Jun 14, 2026", location: "Northgate", status: "accepted" },
-  { id: "REQ-004", client: "Kwame Asante", service: "Emergency Fix", date: "Jun 13, 2026", location: "Central", status: "rejected" },
-  { id: "REQ-005", client: "Amara Diallo", service: "Generator Setup", date: "Jun 12, 2026", location: "Harbor", status: "pending" },
-  { id: "REQ-006", client: "Victor Obi", service: "Socket Installation", date: "Jun 11, 2026", location: "Eastview", status: "accepted" },
-];
+// ─── Status Badge Helpers ─────────────────────────────────────────────────────
+function requestStatusBadge(status) {
+  const map = {
+    "pending":  "adm-badge adm-badge-pending",
+    "accepted": "adm-badge adm-badge-delivered", // green
+    "rejected": "adm-badge adm-badge-cancelled", // red
+  };
+  return map[status] ?? "adm-badge";
+}
 
-const INIT_NOTIFICATIONS = [
-  { id: "N1", title: "New Request from Sarah Mensah", body: "Sarah requested Electrical Installation on Jun 16, 2026.", time: "2h ago", status: "unread" },
-  { id: "N2", title: "New Request from Paul Eze", body: "Paul requested Wiring Repair on Jun 15, 2026.", time: "5h ago", status: "unread" },
-  { id: "N3", title: "Reminder: Pending request REQ-002", body: "You have a pending request awaiting your response.", time: "1d ago", status: "read" },
-  { id: "N4", title: "New Request from Amara Diallo", body: "Amara requested Generator Setup on Jun 12, 2026.", time: "2d ago", status: "replied" },
-  { id: "N5", title: "System: Profile verified", body: "Your technician profile has been verified by Materix.", time: "3d ago", status: "archived" },
-];
-
-function StatCard({ icon, label, value, color, bg }) {
+// ─── Shared UI Components ─────────────────────────────────────────────────────
+function Modal({ open, onClose, children }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    if (open) document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
   return (
-    <div className="rounded-2xl p-5 shadow-sm" style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.06)" }}>
-      <div className="flex items-start justify-between">
+    <div className="adm-modal-backdrop" onClick={onClose}>
+      <div className="adm-modal-box" onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ModalHeader({ title, onClose }) {
+  return (
+    <div className="adm-modal-header">
+      <h2 className="adm-modal-title">{title}</h2>
+      <button className="adm-modal-close" onClick={onClose}><X size={20} /></button>
+    </div>
+  );
+}
+
+function IconBtn({ onClick, icon, danger = false, success = false }) {
+  let cls = "adm-icon-btn";
+  if (danger) cls += " danger";
+  return (
+    <button
+      onClick={onClick}
+      className={cls}
+      style={success ? { color: "#10b981" } : undefined}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function EmptyRow({ cols, msg = "No data found." }) {
+  return (
+    <tr>
+      <td colSpan={cols} style={{ padding: "2.5rem", textAlign: "center", color: "#9ca3af", fontSize: "0.875rem" }}>
+        {msg}
+      </td>
+    </tr>
+  );
+}
+
+function LoadingRow({ cols }) {
+  return (
+    <tr>
+      <td colSpan={cols} style={{ padding: "2.5rem", textAlign: "center" }}>
+        <span className="adm-spinner" />
+      </td>
+    </tr>
+  );
+}
+
+// ─── Overview Tab ─────────────────────────────────────────────────────────────
+function OverviewTab({
+  statCards,
+  recentRequests,
+  setTab,
+  setViewRequest,
+  handleAccept,
+  handleReject,
+  handleDeleteRequest
+}) {
+  return (
+    <div className="adm-space-6">
+      {/* Header */}
+      <div>
+        <h1 className="adm-section-title">Dashboard Overview</h1>
+        <p className="adm-section-sub">Welcome back. Here's your activity overview.</p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="adm-stats-grid">
+        {statCards.map(({ label, value, change, up, Icon }) => (
+          <div key={label} className="adm-stat-card">
+            <div className="adm-stat-header">
+              <span className="adm-stat-label">{label}</span>
+              <div className="adm-stat-icon"><Icon size={18} /></div>
+            </div>
+            <div className="adm-stat-value">{value}</div>
+            <div className={`adm-stat-change ${up ? "up" : "down"}`}>
+              {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+              {change}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Requests Card */}
+      <div className="adm-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1.25rem 1.25rem 0.75rem", borderBottom: "1px solid #f3f4f6" }}>
+          <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "#111827" }}>Recent Requests</h2>
+          <button className="adm-view-all" onClick={() => setTab("requests")}>
+            View all <ExternalLink size={12} />
+          </button>
+        </div>
+        <div className="adm-table-scroll">
+          <table className="adm-table" style={{ minWidth: 600 }}>
+            <thead>
+              <tr>
+                {["Request ID", "Client & Location", "Service", "Date", "Status", "Actions"].map(h => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {recentRequests.length === 0 ? (
+                <EmptyRow cols={6} msg="No recent requests." />
+              ) : (
+                recentRequests.map(req => (
+                  <tr key={req.id}>
+                    <td className="adm-td-mono">{req.id}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "#111827", fontSize: "0.875rem" }}>{req.client}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{req.location}</div>
+                    </td>
+                    <td style={{ fontSize: "0.875rem", color: "#374151" }}>{req.service}</td>
+                    <td style={{ color: "#6b7280", fontSize: "0.75rem" }}>{req.date}</td>
+                    <td><span className={requestStatusBadge(req.status)}>{req.status}</span></td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <IconBtn icon={<Eye size={13} />} onClick={() => setViewRequest(req)} />
+                        {req.status === "pending" && (
+                          <>
+                            <IconBtn icon={<Check size={13} />} onClick={() => handleAccept(req.id)} success />
+                            <IconBtn icon={<X size={13} />} onClick={() => handleReject(req.id)} danger />
+                          </>
+                        )}
+                        <IconBtn icon={<Trash2 size={13} />} onClick={() => handleDeleteRequest(req.id)} danger />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Requests Tab ─────────────────────────────────────────────────────────────
+function RequestsTab({
+  requests,
+  searchQuery,
+  setSearchQuery,
+  filterStatus,
+  setFilterStatus,
+  setViewRequest,
+  handleAccept,
+  handleReject,
+  handleDeleteRequest
+}) {
+  const filtered = requests.filter(r => {
+    // Status Filter
+    if (filterStatus !== "all statuses" && r.status !== filterStatus) return false;
+
+    // Search Query
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+
+    return (
+      r.id.toLowerCase().includes(q) ||
+      r.client.toLowerCase().includes(q) ||
+      r.service.toLowerCase().includes(q) ||
+      r.location.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="adm-space-5">
+      {/* Header Controls */}
+      <div className="adm-page-header">
         <div>
-          <p className="text-xs uppercase tracking-wider mb-2" style={{ color: "#94A3B8", letterSpacing: "0.1em" }}>{label}</p>
-          <p style={{ fontSize: "2.25rem", fontWeight: 800, color: "#0F172A", lineHeight: 1 }}>{value}</p>
+          <h1 className="adm-section-title">Service Requests</h1>
+          <p className="adm-section-sub">Manage and accept customer service requests.</p>
         </div>
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
-          <span style={{ color }}>{icon}</span>
+        <div className="adm-page-controls">
+          <div className="adm-search-wrap">
+            <span className="adm-search-icon"><Search size={14} /></span>
+            <input
+              className="adm-search-input"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search requests..."
+            />
+          </div>
+          <select 
+            className="adm-filter-select" 
+            value={filterStatus} 
+            onChange={e => setFilterStatus(e.target.value)}
+          >
+            {["All Statuses", "Pending", "Accepted", "Rejected"].map(s => (
+              <option key={s} value={s.toLowerCase()}>{s}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Main Table */}
+      <div className="adm-table-wrap">
+        <div className="adm-table-scroll">
+          <table className="adm-table" style={{ minWidth: 740 }}>
+            <thead>
+              <tr>
+                {["Request ID", "Client", "Service & Location", "Date", "Status", "Actions"].map(h => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <EmptyRow cols={6} msg="No requests found." />
+              ) : (
+                filtered.map(req => (
+                  <tr key={req.id}>
+                    <td className="adm-td-mono">{req.id}</td>
+                    <td style={{ fontWeight: 600, color: "#111827", fontSize: "0.875rem" }}>{req.client}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "#374151", fontSize: "0.875rem" }}>{req.service}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{req.location}</div>
+                    </td>
+                    <td style={{ fontSize: "0.8125rem", color: "#4b5563" }}>{req.date}</td>
+                    <td><span className={requestStatusBadge(req.status)}>{req.status}</span></td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <IconBtn icon={<Eye size={13} />} onClick={() => setViewRequest(req)} />
+                        {req.status === "pending" && (
+                          <>
+                            <IconBtn icon={<Check size={13} />} onClick={() => handleAccept(req.id)} success />
+                            <IconBtn icon={<X size={13} />} onClick={() => handleReject(req.id)} danger />
+                          </>
+                        )}
+                        <IconBtn icon={<Trash2 size={13} />} onClick={() => handleDeleteRequest(req.id)} danger />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 }
 
-function ConfirmModal({ type, requestId, clientName, onConfirm, onCancel }) {
-  const isAccept = type === "accept";
+// ─── Notifications Tab ────────────────────────────────────────────────────────
+function NotificationsTab({
+  notifications,
+  filter,
+  setFilter,
+  replyInputs,
+  setReplyInputs,
+  onMarkRead,
+  onReply,
+  onArchive,
+  onDelete,
+  onClearAll
+}) {
+  const unreadCount = notifications.filter(n => n.status === "unread").length;
+  
+  const filtered = notifications.filter(n => {
+    if (filter === "all") return n.status !== "archived";
+    return n.status === filter;
+  });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)" }}>
-      <div className="w-full max-w-xs rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: "#ffffff" }}>
-        <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
-            style={{ backgroundColor: isAccept ? "#F0FDF4" : "#FEF2F2" }}>
-            {isAccept
-              ? <CheckCircle size={22} style={{ color: "#16A34A" }} />
-              : <AlertTriangle size={22} style={{ color: "#EF4444" }} />}
-          </div>
-          <h3 style={{ fontWeight: 700, color: "#0F172A", marginBottom: "0.4rem" }}>
-            {isAccept ? "Accept Request" : "Reject Request"}
-          </h3>
-          <p className="text-sm" style={{ color: "#64748B" }}>
-            Are you sure you want to {isAccept ? "accept" : "reject"} the request from{" "}
-            <strong>{clientName}</strong>?
-          </p>
+    <div className="adm-space-5">
+      <div>
+        <h1 className="adm-section-title" style={{ marginBottom: "1.5rem" }}>Notifications Manager</h1>
+      </div>
+
+      {/* Filters & Actions Bar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {[
+            { key: "all", label: "All" },
+            { key: "unread", label: `Unread${unreadCount > 0 ? `  ${unreadCount}` : ""}` },
+            { key: "read", label: "Read" },
+            { key: "replied", label: "Replied" },
+            { key: "archived", label: "Archived" }
+          ].map(opt => {
+            const isActive = filter === opt.key;
+            return (
+              <button
+                key={opt.key}
+                onClick={() => setFilter(opt.key)}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: "9999px",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  border: isActive ? "none" : "1px solid #e5e7eb",
+                  backgroundColor: isActive ? "#f59e0b" : "#ffffff",
+                  color: isActive ? "#ffffff" : "#4b5563",
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer border"
-            style={{ backgroundColor: "transparent", borderColor: "#E2E8F0", color: "#64748B" }}>
-            Cancel
+
+        {notifications.length > 0 && (
+          <button
+            onClick={onClearAll}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 14px",
+              backgroundColor: "#ef4444",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "0.8125rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "background-color 0.15s"
+            }}
+            onMouseOver={e => e.currentTarget.style.backgroundColor = "#dc2626"}
+            onMouseOut={e => e.currentTarget.style.backgroundColor = "#ef4444"}
+          >
+            <Trash2 size={14} /> Clear All
           </button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer text-white"
-            style={{ backgroundColor: isAccept ? "#16A34A" : "#EF4444", border: "none" }}>
-            {isAccept ? "Accept" : "Reject"}
-          </button>
-        </div>
+        )}
       </div>
-    </div>
-  );
-}
 
-function DeleteConfirm({ onConfirm, onCancel }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)" }}>
-      <div className="w-full max-w-xs rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: "#ffffff" }}>
-        <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: "#FEF2F2" }}>
-            <Trash2 size={22} style={{ color: "#EF4444" }} />
+      {/* Notifications List */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {filtered.length === 0 ? (
+          <div className="adm-card" style={{ padding: "3rem", textAlign: "center", color: "#9ca3af", fontSize: "0.875rem" }}>
+            No notifications in this category.
           </div>
-          <h3 style={{ fontWeight: 700, color: "#0F172A", marginBottom: "0.4rem" }}>Delete Notification</h3>
-          <p className="text-sm" style={{ color: "#64748B" }}>Are you sure you want to delete this notification?</p>
-        </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer border"
-            style={{ backgroundColor: "transparent", borderColor: "#E2E8F0", color: "#64748B" }}>Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer text-white"
-            style={{ backgroundColor: "#EF4444", border: "none" }}>Delete</button>
-        </div>
+        ) : (
+          filtered.map(n => {
+            const isUnread = n.status === "unread";
+            
+            let badgeBg = "#f3f4f6";
+            let badgeColor = "#4b5563";
+            if (n.status === "unread") { badgeBg = "#ffedd5"; badgeColor = "#ea580c"; }
+            else if (n.status === "read") { badgeBg = "#dcfce7"; badgeColor = "#16a34a"; }
+            else if (n.status === "replied") { badgeBg = "#dbeafe"; badgeColor = "#2563eb"; }
+            else if (n.status === "archived") { badgeBg = "#e5e7eb"; badgeColor = "#4b5563"; }
+
+            return (
+              <div
+                key={n.id}
+                style={{
+                  border: isUnread ? "1px solid #fde68a" : "1px solid #e5e7eb",
+                  borderRadius: "12px",
+                  padding: "1.25rem",
+                  backgroundColor: isUnread ? "#fffbeb" : "#ffffff",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.875rem",
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                  transition: "all 0.15s"
+                }}
+              >
+                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                  {/* Left Circle Icon */}
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      backgroundColor: isUnread ? "#fff7ed" : "#f3f4f6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0
+                    }}
+                  >
+                    <Bell size={18} style={{ color: isUnread ? "#f97316" : "#9ca3af" }} />
+                  </div>
+
+                  <div style={{ flexGrow: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+                      <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#111827", margin: 0 }}>
+                        {n.title}
+                      </h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+                        <span
+                          style={{
+                            fontSize: "0.6875rem",
+                            fontWeight: 700,
+                            padding: "3px 8px",
+                            borderRadius: "9999px",
+                            textTransform: "uppercase",
+                            backgroundColor: badgeBg,
+                            color: badgeColor
+                          }}
+                        >
+                          {n.status}
+                        </span>
+                        <span style={{ fontSize: "0.8125rem", color: "#9ca3af" }}>{n.time}</span>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: "0.875rem", color: "#4b5563", margin: "4px 0 0 0", lineHeight: "1.4" }}>
+                      {n.message}
+                    </p>
+
+                    {n.replyText && (
+                      <div
+                        style={{
+                          marginTop: "0.75rem",
+                          padding: "0.5rem 0.75rem",
+                          backgroundColor: "#f9fafb",
+                          borderRadius: "6px",
+                          fontSize: "0.8125rem",
+                          color: "#374151",
+                          borderLeft: "3px solid #2563eb",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px"
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, color: "#1e3a8a" }}>Your Reply:</span>
+                        <span>{n.replyText}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions row */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderTop: "1px solid #f3f4f6", paddingTop: "0.75rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Write a reply..."
+                    value={replyInputs[n.id] || ""}
+                    onChange={e => setReplyInputs(prev => ({ ...prev, [n.id]: e.target.value }))}
+                    style={{
+                      height: "34px",
+                      borderRadius: "9999px",
+                      border: "1px solid #d1d5db",
+                      padding: "0 1rem",
+                      fontSize: "0.8125rem",
+                      color: "#374151",
+                      backgroundColor: "#ffffff",
+                      flexGrow: 1,
+                      outline: "none"
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") onReply(n.id);
+                    }}
+                  />
+
+                  <button
+                    onClick={() => onReply(n.id)}
+                    style={{
+                      height: "34px",
+                      padding: "0 1rem",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "9999px",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      transition: "background-color 0.15s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#1d4ed8"}
+                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#2563eb"}
+                  >
+                    <Reply size={13} /> Reply
+                  </button>
+
+                  {isUnread && (
+                    <button
+                      onClick={() => onMarkRead(n.id)}
+                      style={{
+                        height: "34px",
+                        padding: "0 0.875rem",
+                        backgroundColor: "transparent",
+                        border: "1px solid #10b981",
+                        color: "#10b981",
+                        borderRadius: "8px",
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        transition: "all 0.15s"
+                      }}
+                      onMouseOver={e => {
+                        e.currentTarget.style.backgroundColor = "#ecfdf5";
+                      }}
+                      onMouseOut={e => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <CheckCircle size={13} /> Read
+                    </button>
+                  )}
+
+                  {n.status !== "archived" && (
+                    <button
+                      onClick={() => onArchive(n.id)}
+                      style={{
+                        height: "34px",
+                        padding: "0 0.875rem",
+                        backgroundColor: "transparent",
+                        border: "1px solid #d1d5db",
+                        color: "#4b5563",
+                        borderRadius: "8px",
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        transition: "all 0.15s"
+                      }}
+                      onMouseOver={e => {
+                        e.currentTarget.style.backgroundColor = "#f9fafb";
+                      }}
+                      onMouseOut={e => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <Archive size={13} /> Archive
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => onDelete(n.id)}
+                    style={{
+                      height: "34px",
+                      width: "34px",
+                      backgroundColor: "#fef2f2",
+                      color: "#ef4444",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "background-color 0.15s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#fef2f2"}
+                    title="Delete Notification"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
 }
 
-function ClearAllConfirm({ onConfirm, onCancel }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)" }}>
-      <div className="w-full max-w-xs rounded-2xl p-6 shadow-2xl" style={{ backgroundColor: "#ffffff" }}>
-        <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: "#FFF3E0" }}>
-            <Trash2 size={22} style={{ color: "#FF8C00" }} />
-          </div>
-          <h3 style={{ fontWeight: 700, color: "#0F172A", marginBottom: "0.4rem" }}>Clear All Notifications</h3>
-          <p className="text-sm" style={{ color: "#64748B" }}>This will permanently remove all notifications.</p>
-        </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer border"
-            style={{ backgroundColor: "transparent", borderColor: "#E2E8F0", color: "#64748B" }}>Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl text-sm font-semibold cursor-pointer text-white"
-            style={{ backgroundColor: "#FF8C00", border: "none" }}>Clear All</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const TechDashboard = () => {
+// ─── Main Component ──────────────────────────────────────────────────────────
+export default function TechDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [requests, setRequests] = useState(INIT_REQUESTS);
-  const [notifications, setNotifications] = useState(INIT_NOTIFICATIONS);
-  const [confirmModal, setConfirmModal] = useState(null); // { type, id, client }
-  const [deleteModal, setDeleteModal] = useState(null);
-  const [clearAllModal, setClearAllModal] = useState(false);
-  const [replyInput, setReplyInput] = useState({});
+  const [requests, setRequests] = useState([
+    { id: "REQ-001", client: "Sarah Mensah", service: "Electrical Installation", date: "Jun 16, 2026", location: "Downtown", status: "pending" },
+    { id: "REQ-002", client: "Paul Eze", service: "Wiring Repair", date: "Jun 15, 2026", location: "Westside", status: "pending" },
+    { id: "REQ-003", client: "Linda Nkosi", service: "Panel Upgrade", date: "Jun 14, 2026", location: "Northgate", status: "accepted" },
+    { id: "REQ-004", client: "Kwame Asante", service: "Emergency Fix", date: "Jun 13, 2026", location: "Central", status: "rejected" },
+    { id: "REQ-005", client: "Amara Diallo", service: "Generator Setup", date: "Jun 12, 2026", location: "Harbor", status: "pending" },
+    { id: "REQ-006", client: "Victor Obi", service: "Socket Installation", date: "Jun 11, 2026", location: "Eastview", status: "accepted" },
+  ]);
+
+  const [localNotifications, setLocalNotifications] = useState([
+    {
+      id: "N1",
+      title: "New Request from Sarah Mensah",
+      message: "Sarah requested Electrical Installation on Jun 16, 2026.",
+      status: "unread",
+      time: "2h ago",
+      replyText: ""
+    },
+    {
+      id: "N2",
+      title: "New Request from Paul Eze",
+      message: "Paul requested Wiring Repair on Jun 15, 2026.",
+      status: "unread",
+      time: "5h ago",
+      replyText: ""
+    },
+    {
+      id: "N3",
+      title: "Reminder: Pending request REQ-002",
+      message: "You have a pending request awaiting your response.",
+      status: "read",
+      time: "1d ago",
+      replyText: ""
+    },
+    {
+      id: "N4",
+      title: "New Request from Amara Diallo",
+      message: "Amara requested Generator Setup on Jun 12, 2026.",
+      status: "replied",
+      time: "2d ago",
+      replyText: ""
+    },
+    {
+      id: "N5",
+      title: "System: Profile verified",
+      message: "Your technician profile has been verified by Materix.",
+      status: "archived",
+      time: "3d ago",
+      replyText: ""
+    }
+  ]);
+
+  const [replyInputs, setReplyInputs] = useState({});
   const [notifFilter, setNotifFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all statuses");
 
-  const totalRequests = requests.length;
-  const acceptedRequests = requests.filter((r) => r.status === "accepted").length;
-  const rejectedRequests = requests.filter((r) => r.status === "rejected").length;
-  const pendingRequests = requests.filter((r) => r.status === "pending").length;
-  const unreadCount = notifications.filter((n) => n.status === "unread").length;
+  const [viewRequest, setViewRequest] = useState(null);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const filteredNotifs = notifications.filter(
-    (n) => notifFilter === "all" || n.status === notifFilter
-  );
+  const username = localStorage.getItem("username") || "Technician";
+  const profilePic = localStorage.getItem("profile_picture");
 
-  const tabs = [
-    { id: "overview", label: "Overview", icon: <BarChart2 size={16} /> },
-    { id: "requests", label: "Requests", icon: <Inbox size={16} /> },
-    { id: "notifications", label: "Notifications", icon: <Bell size={16} /> },
-  ];
+  const userRef = useRef(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const clickOutside = (e) => {
+      if (userRef.current && !userRef.current.contains(e.target)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", clickOutside);
+    return () => document.removeEventListener("mousedown", clickOutside);
+  }, []);
 
   const handleAccept = (id) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "accepted" } : r))
-    );
-    setConfirmModal(null);
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "accepted" } : r));
+    if (viewRequest && viewRequest.id === id) {
+      setViewRequest(prev => ({ ...prev, status: "accepted" }));
+    }
   };
 
   const handleReject = (id) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "rejected" } : r))
-    );
-    setConfirmModal(null);
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
+    if (viewRequest && viewRequest.id === id) {
+      setViewRequest(prev => ({ ...prev, status: "rejected" }));
+    }
   };
 
-  const markRead = (id) =>
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id && n.status === "unread" ? { ...n, status: "read" } : n))
-    );
-
-  const archiveNotif = (id) =>
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: "archived" } : n))
-    );
-
-  const deleteNotif = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    setDeleteModal(null);
+  const handleDeleteRequest = (id) => {
+    if (confirm("Are you sure you want to delete this request?")) {
+      setRequests(prev => prev.filter(r => r.id !== id));
+      if (viewRequest && viewRequest.id === id) {
+        setViewRequest(null);
+      }
+    }
   };
 
-  const sendReply = (id) => {
-    if (!replyInput[id]?.trim()) return;
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: "replied" } : n))
-    );
-    setReplyInput((prev) => ({ ...prev, [id]: "" }));
+  // Local notifications operations
+  const handleLocalMarkRead = (id) => {
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "read" } : n));
   };
 
-  const requestStatusBadge = (status) => {
-    const map = {
-      pending: { bg: "#FFF3E0", color: "#FF8C00", label: "Pending" },
-      accepted: { bg: "#F0FDF4", color: "#16A34A", label: "Accepted" },
-      rejected: { bg: "#FEF2F2", color: "#EF4444", label: "Rejected" },
-    };
-    const s = map[status] || map.pending;
-    return (
-      <span className="text-xs font-semibold px-3 py-1 rounded-full"
-        style={{ backgroundColor: s.bg, color: s.color }}>{s.label}</span>
-    );
+  const handleLocalReply = (id) => {
+    const text = replyInputs[id];
+    if (!text || !text.trim()) return;
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "replied", replyText: text } : n));
+    setReplyInputs(prev => ({ ...prev, [id]: "" }));
   };
 
-  const notifStatusBadge = (status) => {
-    const map = {
-      unread: { bg: "#FFF3E0", color: "#FF8C00" },
-      read: { bg: "#F0FDF4", color: "#16A34A" },
-      replied: { bg: "#EFF6FF", color: "#2563EB" },
-      archived: { bg: "#F8FAFC", color: "#64748B" },
-    };
-    const s = map[status] || map.read;
-    return (
-      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full capitalize"
-        style={{ backgroundColor: s.bg, color: s.color }}>{status}</span>
-    );
+  const handleLocalArchive = (id) => {
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "archived" } : n));
   };
+
+  const handleLocalDelete = (id) => {
+    setLocalNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleLocalClearAll = () => {
+    setLocalNotifications([]);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    localStorage.removeItem("username");
+    localStorage.removeItem("profile_picture");
+    localStorage.removeItem("role");
+    window.location.href = "/login";
+  };
+
+  // Card counts
+  const totalRequestsCount = requests.length;
+  const acceptedRequests = requests.filter((r) => r.status === "accepted").length;
+  const rejectedRequests = requests.filter((r) => r.status === "rejected").length;
+  const pendingRequests = requests.filter((r) => r.status === "pending").length;
+
+  const statCards = [
+    {
+      label: "TOTAL REQUESTS",
+      value: String(totalRequestsCount),
+      change: "Lifetime assignments", up: true, Icon: BarChart2,
+    },
+    {
+      label: "ACCEPTED",
+      value: String(acceptedRequests),
+      change: "Active & completed", up: true, Icon: CheckCircle,
+    },
+    {
+      label: "REJECTED",
+      value: String(rejectedRequests),
+      change: "Declined requests", up: false, Icon: XCircle,
+    },
+    {
+      label: "PENDING",
+      value: String(pendingRequests),
+      change: "Requires attention", up: true, Icon: Clock,
+    },
+  ];
+
+  const TABS = [
+    { key: "overview",      label: "Overview",      Icon: BarChart2 },
+    { key: "requests",      label: "Requests",      Icon: Inbox },
+    { key: "notifications", label: "Notifications", Icon: Bell },
+  ];
+
+  const unreadCount = localNotifications.filter(n => n.status === "unread").length;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#F1F5F9" }}>
-      <Navbar />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 style={{ fontWeight: 800, fontSize: "1.625rem", color: "#0F172A", fontFamily: "Montserrat, Inter, sans-serif" }}>
-            Technician Dashboard
-          </h1>
-          <p style={{ color: "#64748B", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-            Welcome back. Here's your activity overview.
-          </p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl mb-6 w-fit" style={{ backgroundColor: "#E2E8F0" }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all"
-              style={{
-                backgroundColor: activeTab === tab.id ? "#ffffff" : "transparent",
-                color: activeTab === tab.id ? "#FF8C00" : "#64748B",
-                border: "none",
-                boxShadow: activeTab === tab.id ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-              }}
-            >
-              {tab.icon}
-              {tab.label}
-              {tab.id === "notifications" && unreadCount > 0 && (
-                <span className="w-5 h-5 rounded-full text-xs text-white flex items-center justify-center"
-                  style={{ backgroundColor: "#FF8C00", fontWeight: 700 }}>
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Overview Tab */}
-        {activeTab === "overview" && (
-          <div>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
-              <StatCard icon={<BarChart2 size={22} />} label="Total Requests" value={totalRequests} color="#2563EB" bg="#EFF6FF" />
-              <StatCard icon={<CheckCircle size={22} />} label="Accepted" value={acceptedRequests} color="#16A34A" bg="#F0FDF4" />
-              <StatCard icon={<XCircle size={22} />} label="Rejected" value={rejectedRequests} color="#EF4444" bg="#FEF2F2" />
-              <StatCard icon={<Clock size={22} />} label="Pending" value={pendingRequests} color="#FF8C00" bg="#FFF3E0" />
-            </div>
-
-            <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.06)" }}>
-              <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(15,23,42,0.06)" }}>
-                <h2 style={{ fontWeight: 700, color: "#0F172A", fontSize: "1rem" }}>Recent Requests</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(15,23,42,0.06)" }}>
-                      {["Request ID", "Client", "Service", "Date", "Status"].map((h) => (
-                        <th key={h} className="px-6 py-3 text-left text-xs uppercase tracking-wider"
-                          style={{ color: "#94A3B8", fontWeight: 600 }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {requests.slice(0, 4).map((req) => (
-                      <tr key={req.id} className="hover:bg-gray-50 transition-colors"
-                        style={{ borderBottom: "1px solid rgba(15,23,42,0.04)" }}>
-                        <td className="px-6 py-4 text-sm" style={{ color: "#94A3B8", fontWeight: 500 }}>{req.id}</td>
-                        <td className="px-6 py-4 text-sm" style={{ color: "#0F172A", fontWeight: 600 }}>{req.client}</td>
-                        <td className="px-6 py-4 text-sm" style={{ color: "#334155" }}>{req.service}</td>
-                        <td className="px-6 py-4 text-sm" style={{ color: "#64748B" }}>{req.date}</td>
-                        <td className="px-6 py-4">{requestStatusBadge(req.status)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Requests Tab */}
-        {activeTab === "requests" && (
-          <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.06)" }}>
-            <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "rgba(15,23,42,0.06)" }}>
-              <h2 style={{ fontWeight: 700, color: "#0F172A", fontSize: "1rem" }}>All Requests</h2>
-              <span className="text-sm" style={{ color: "#64748B" }}>{requests.length} total</span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(15,23,42,0.06)", backgroundColor: "#F8FAFC" }}>
-                    {["ID", "Client", "Service", "Location", "Date", "Status", "Actions"].map((h) => (
-                      <th key={h} className="px-5 py-3 text-left text-xs uppercase tracking-wider"
-                        style={{ color: "#94A3B8", fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {requests.map((req) => {
-                    const isFinal = req.status === "accepted" || req.status === "rejected";
-                    return (
-                      <tr key={req.id} className="hover:bg-gray-50 transition-colors"
-                        style={{ borderBottom: "1px solid rgba(15,23,42,0.04)" }}>
-                        <td className="px-5 py-4 text-xs" style={{ color: "#94A3B8", fontWeight: 500 }}>{req.id}</td>
-                        <td className="px-5 py-4 text-sm" style={{ color: "#0F172A", fontWeight: 600 }}>{req.client}</td>
-                        <td className="px-5 py-4 text-sm" style={{ color: "#334155" }}>{req.service}</td>
-                        <td className="px-5 py-4 text-sm" style={{ color: "#64748B" }}>{req.location}</td>
-                        <td className="px-5 py-4 text-sm" style={{ color: "#64748B" }}>{req.date}</td>
-                        <td className="px-5 py-4">{requestStatusBadge(req.status)}</td>
-                        <td className="px-5 py-4">
-                          {isFinal ? (
-                            <span style={{ color: "#94A3B8", fontSize: "0.75rem" }}>—</span>
-                          ) : (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => setConfirmModal({ type: "accept", id: req.id, client: req.client })}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-white"
-                                style={{ backgroundColor: "#16A34A", border: "none" }}>
-                                <Check size={11} /> Accept
-                              </button>
-                              <button
-                                onClick={() => setConfirmModal({ type: "reject", id: req.id, client: req.client })}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-white"
-                                style={{ backgroundColor: "#EF4444", border: "none" }}>
-                                <X size={11} /> Reject
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Notifications Tab */}
-        {activeTab === "notifications" && (
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex gap-2 flex-wrap">
-                {["all", "unread", "read", "replied", "archived"].map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setNotifFilter(f)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all capitalize"
-                    style={{
-                      backgroundColor: notifFilter === f ? "#FF8C00" : "#ffffff",
-                      color: notifFilter === f ? "white" : "#64748B",
-                      border: `1px solid ${notifFilter === f ? "#FF8C00" : "#E2E8F0"}`,
-                    }}>
-                    {f}
-                    {f === "unread" && unreadCount > 0 && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-xs"
-                        style={{ backgroundColor: "rgba(255,255,255,0.3)" }}>{unreadCount}</span>
-                    )}
-                  </button>
+    <div className="adm-scope">
+      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
+      <header className="adm-navbar">
+        <div className="adm-navbar-inner">
+          <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+            <span className="adm-logo" style={{ cursor: "pointer" }} onClick={() => window.location.href = "/"}>MATERIX</span>
+            <nav>
+              <ul className="adm-nav-links">
+                {[
+                  { label: "Home", href: "/" },
+                  { label: "Our Products", href: "/#products-section" },
+                  { label: "Our Services", href: "/#services-section" },
+                  { label: "About", href: "/#about-section" }
+                ].map(item => (
+                  <li key={item.label}>
+                    <a href={item.href}>{item.label}</a>
+                  </li>
                 ))}
-              </div>
-              <button onClick={() => setClearAllModal(true)}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-white"
-                style={{ backgroundColor: "#EF4444", border: "none" }}>
-                <Trash2 size={12} /> Clear All
+                <li><span className="adm-active">Dashboard</span></li>
+              </ul>
+            </nav>
+          </div>
+
+          <div className="adm-nav-right">
+            {/* Notification Bell Icon */}
+            <div style={{ position: "relative" }}>
+              <button className="adm-bell-btn" onClick={() => setActiveTab("notifications")}>
+                <Bell size={16} />
+                {unreadCount > 0 && <span className="adm-notif-dot">{unreadCount}</span>}
               </button>
             </div>
 
-            <div className="rounded-2xl shadow-sm overflow-hidden"
-              style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.06)" }}>
-              {filteredNotifs.length === 0 ? (
-                <div className="text-center py-12" style={{ color: "#94A3B8" }}>
-                  <Bell size={36} style={{ margin: "0 auto 0.75rem", opacity: 0.4 }} />
-                  <p className="text-sm">No {notifFilter !== "all" ? notifFilter : ""} notifications</p>
+            {/* Profile Dropdown Chip */}
+            <div className="adm-user-chip" ref={userRef} style={{ position: "relative" }}>
+              <div 
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)} 
+                style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}
+              >
+                <span>{username}</span>
+                <div className="adm-avatar" style={{ overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {profilePic ? <img src={profilePic} alt="profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={13} />}
                 </div>
-              ) : (
-                filteredNotifs.map((notif, idx) => (
-                  <div key={notif.id} className="p-5 transition-colors"
-                    style={{
-                      borderBottom: idx < filteredNotifs.length - 1 ? "1px solid rgba(15,23,42,0.05)" : "none",
-                      backgroundColor: notif.status === "unread" ? "#FFFBF0" : "transparent",
-                    }}>
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: notif.status === "unread" ? "#FFF3E0" : "#F8FAFC" }}>
-                        <Bell size={18} style={{ color: notif.status === "unread" ? "#FF8C00" : "#94A3B8" }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <div>
-                            <p style={{ fontWeight: 600, fontSize: "0.875rem", color: "#0F172A" }}>{notif.title}</p>
-                            <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>{notif.body}</p>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {notifStatusBadge(notif.status)}
-                            <span className="text-xs" style={{ color: "#94A3B8" }}>{notif.time}</span>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex gap-2 flex-wrap">
-                          <input
-                            className="flex-1 min-w-32 px-3 py-1.5 rounded-lg text-xs outline-none border"
-                            style={{ borderColor: "#E2E8F0", color: "#334155" }}
-                            placeholder="Write a reply..."
-                            value={replyInput[notif.id] || ""}
-                            onChange={(e) => setReplyInput((prev) => ({ ...prev, [notif.id]: e.target.value }))}
-                          />
-                          <button onClick={() => sendReply(notif.id)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer text-white"
-                            style={{ backgroundColor: "#2563EB", border: "none" }}>
-                            <Reply size={11} /> Reply
-                          </button>
-                          {notif.status === "unread" && (
-                            <button onClick={() => markRead(notif.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
-                              style={{ backgroundColor: "#F0FDF4", color: "#16A34A", border: "none" }}>
-                              <Check size={11} /> Read
-                            </button>
-                          )}
-                          {notif.status !== "archived" && (
-                            <button onClick={() => archiveNotif(notif.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
-                              style={{ backgroundColor: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" }}>
-                              <Archive size={11} /> Archive
-                            </button>
-                          )}
-                          <button onClick={() => setDeleteModal(notif.id)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
-                            style={{ backgroundColor: "#FEF2F2", color: "#EF4444", border: "none" }}>
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                <ChevronDown size={13} style={{ transform: userDropdownOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+              </div>
+              
+              {userDropdownOpen && (
+                <div style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "100%",
+                  marginTop: "0.5rem",
+                  backgroundColor: "#1f2937",
+                  border: "1px solid #374151",
+                  borderRadius: "0.375rem",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  zIndex: 50,
+                  minWidth: "150px",
+                  overflow: "hidden"
+                }}>
+                  <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    <li 
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        window.location.href = "/profile";
+                      }} 
+                      style={{
+                        padding: "0.5rem 1rem",
+                        color: "#d1d5db",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        transition: "background-color 0.15s, color 0.15s"
+                      }}
+                      className="adm-dropdown-item"
+                    >
+                      Profile
+                    </li>
+                    <li 
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        window.location.href = "/pack";
+                      }} 
+                      style={{
+                        padding: "0.5rem 1rem",
+                        color: "#d1d5db",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        transition: "background-color 0.15s, color 0.15s"
+                      }}
+                      className="adm-dropdown-item"
+                    >
+                      Signup
+                    </li>
+                    <li 
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        handleLogout();
+                      }} 
+                      style={{
+                        padding: "0.5rem 1rem",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        borderTop: "1px solid #374151",
+                        transition: "background-color 0.15s, color 0.15s"
+                      }}
+                      className="adm-dropdown-item"
+                    >
+                      Logout
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <button className="adm-mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>
+              <Menu size={20} />
+            </button>
+          </div>
+        </div>
+
+        {mobileOpen && (
+          <div className="adm-mobile-menu">
+            {["Home", "Our Products", "Our Services", "About", "Dashboard"].map(n => (
+              <a key={n} href="#">{n}</a>
+            ))}
+          </div>
+        )}
+      </header>
+
+      {/* ── Tab Bar ────────────────────────────────────────────────────────── */}
+      <div className="adm-tabbar">
+        <div className="adm-tabbar-inner">
+          {TABS.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              className={`adm-tab-btn${activeTab === key ? " active" : ""}`}
+              onClick={() => setActiveTab(key)}
+            >
+              <Icon size={14} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Content ────────────────────────────────────────────────────────── */}
+      <main className="adm-main">
+        {activeTab === "overview" && (
+          <OverviewTab 
+            statCards={statCards}
+            recentRequests={requests}
+            setTab={setActiveTab}
+            setViewRequest={setViewRequest}
+            handleAccept={handleAccept}
+            handleReject={handleReject}
+            handleDeleteRequest={handleDeleteRequest}
+          />
+        )}
+
+        {activeTab === "requests" && (
+          <RequestsTab 
+            requests={requests}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            setViewRequest={setViewRequest}
+            handleAccept={handleAccept}
+            handleReject={handleReject}
+            handleDeleteRequest={handleDeleteRequest}
+          />
+        )}
+
+        {activeTab === "notifications" && (
+          <NotificationsTab 
+            notifications={localNotifications}
+            filter={notifFilter}
+            setFilter={setNotifFilter}
+            replyInputs={replyInputs}
+            setReplyInputs={setReplyInputs}
+            onMarkRead={handleLocalMarkRead}
+            onReply={handleLocalReply}
+            onArchive={handleLocalArchive}
+            onDelete={handleLocalDelete}
+            onClearAll={handleLocalClearAll}
+          />
+        )}
+      </main>
+
+      {/* ── Details Modal ─────────────────────────────────────────────────── */}
+      <Modal open={!!viewRequest} onClose={() => setViewRequest(null)}>
+        {viewRequest && (
+          <div className="adm-modal-body">
+            <ModalHeader title="Service Request Details" onClose={() => setViewRequest(null)} />
+            
+            <div className="adm-space-4" style={{ marginBottom: "1.5rem" }}>
+              {[
+                ["Request ID", viewRequest.id],
+                ["Client Name", viewRequest.client],
+                ["Requested Service", viewRequest.service],
+                ["Location / Address", viewRequest.location],
+                ["Preferred Date", viewRequest.date],
+                ["Request Status", <span className={requestStatusBadge(viewRequest.status)}>{viewRequest.status}</span>]
+              ].map(([k, v]) => (
+                <div key={k} className="adm-detail-row">
+                  <span className="adm-detail-key">{k}</span>
+                  <span className="adm-detail-val">{v}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "2rem" }}>
+              <button className="adm-btn-secondary" onClick={() => setViewRequest(null)}>Close</button>
+              
+              {viewRequest.status === "pending" && (
+                <>
+                  <button 
+                    className="adm-btn-primary" 
+                    onClick={() => {
+                      handleAccept(viewRequest.id);
+                      setViewRequest(null);
+                    }}
+                    style={{ border: "none" }}
+                  >
+                    Accept Request
+                  </button>
+                  <button 
+                    className="adm-btn-primary" 
+                    onClick={() => {
+                      handleReject(viewRequest.id);
+                      setViewRequest(null);
+                    }}
+                    style={{ backgroundColor: "#ef4444", border: "none" }}
+                  >
+                    Reject Request
+                  </button>
+                </>
               )}
             </div>
           </div>
         )}
-      </div>
-
-      {confirmModal && (
-        <ConfirmModal
-          type={confirmModal.type}
-          requestId={confirmModal.id}
-          clientName={confirmModal.client}
-          onConfirm={() =>
-            confirmModal.type === "accept"
-              ? handleAccept(confirmModal.id)
-              : handleReject(confirmModal.id)
-          }
-          onCancel={() => setConfirmModal(null)}
-        />
-      )}
-      {deleteModal && (
-        <DeleteConfirm
-          onConfirm={() => deleteNotif(deleteModal)}
-          onCancel={() => setDeleteModal(null)}
-        />
-      )}
-      {clearAllModal && (
-        <ClearAllConfirm
-          onConfirm={() => { setNotifications([]); setClearAllModal(false); }}
-          onCancel={() => setClearAllModal(false)}
-        />
-      )}
+      </Modal>
     </div>
   );
-};
-
-export default TechDashboard;
+}
