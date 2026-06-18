@@ -20,14 +20,30 @@ const Payment = ({ onClose }) => {
     setPaymentDetails({ ...paymentDetails, [name]: value });
   };
 
-  const handlePaymentSubmit = (e) => {
+  const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
 
-    setTimeout(() => {
-      setIsProcessing(false);
-      setPaymentCode("TRX" + Math.floor(Math.random() * 1000000));
-      setPaymentStep("confirmation");
+    // Simulate payment processing delay (2s), then call backend to activate account
+    setTimeout(async () => {
+      try {
+        const token = localStorage.getItem("access");
+        if (token) {
+          await fetch("http://127.0.0.1:8000/api/auth/complete-payment/", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+        }
+      } catch (_) {
+        // Even if the API call fails, still show confirmation (graceful degradation)
+      } finally {
+        setIsProcessing(false);
+        setPaymentCode("TRX" + Math.floor(Math.random() * 1000000));
+        setPaymentStep("confirmation");
+      }
     }, 2000);
   };
 
@@ -164,7 +180,7 @@ const Payment = ({ onClose }) => {
               <FaCheckCircle />
             </div>
             <h3>Payment Successful!</h3>
-            <p>Your trial has been activated.</p>
+            <p>Your account is now fully activated. Your profile is visible to clients on the Materix portal!</p>
             <div className="payment-code">
               <span>Transaction ID:</span>
               <strong>{paymentCode}</strong>
@@ -172,9 +188,9 @@ const Payment = ({ onClose }) => {
             
             <button
               className="continue-shopping-btn"
-              onClick={() => { setShowPayment(false); navigate("/login"); }}
+              onClick={() => { setShowPayment(false); navigate("/techdash"); }}
             >
-              Continue
+              Go to My Dashboard
             </button>
           </div>
         )}

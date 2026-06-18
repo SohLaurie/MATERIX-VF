@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart2, CheckCircle, XCircle, Clock, Bell, ChevronDown, Search,
   Eye, X, Reply, Archive, Trash2, AlertTriangle, Check, User, Menu,
-  MapPin, Calendar, Wrench, Inbox, TrendingUp, TrendingDown, ExternalLink
+  MapPin, Calendar, Wrench, Inbox, TrendingUp, TrendingDown, ExternalLink,
+  CreditCard
 } from "lucide-react";
 import "../../styles/admin-dashboard.css";
 
@@ -14,6 +16,35 @@ function requestStatusBadge(status) {
     "rejected": "adm-badge adm-badge-cancelled", // red
   };
   return map[status] ?? "adm-badge";
+}
+
+function requestPriorityBadge(priority) {
+  const map = {
+    "normal":    "adm-badge adm-badge-progress",
+    "urgent":    "adm-badge adm-badge-pending",
+    "emergency": "adm-badge adm-badge-cancelled",
+  };
+  return map[(priority || "").toLowerCase()] ?? "adm-badge adm-badge-progress";
+}
+
+function parseRequestMessage(rawMessage) {
+  let priority = "normal";
+  let dateStr = "Any";
+  let desc = rawMessage || "";
+
+  const urgencyMatch = desc.match(/\[Urgency:\s*([^\]]+)\]/i);
+  if (urgencyMatch) {
+    priority = urgencyMatch[1].toLowerCase();
+  }
+
+  const dateMatch = desc.match(/\[Preferred Date:\s*([^\]]+)\]/i);
+  if (dateMatch) {
+    dateStr = dateMatch[1];
+  }
+
+  desc = desc.replace(/\[Urgency:\s*[^\]]+\]\s*/i, "").replace(/\[Preferred Date:\s*[^\]]+\]\s*/i, "");
+
+  return { priority, dateStr, description: desc };
 }
 
 // ─── Shared UI Components ─────────────────────────────────────────────────────
@@ -120,17 +151,17 @@ function OverviewTab({
           </button>
         </div>
         <div className="adm-table-scroll">
-          <table className="adm-table" style={{ minWidth: 600 }}>
+          <table className="adm-table" style={{ minWidth: 650 }}>
             <thead>
               <tr>
-                {["Request ID", "Client & Location", "Service", "Date", "Status", "Actions"].map(h => (
+                {["Request ID", "Client & Location", "Service", "Date", "Priority", "Status", "Actions"].map(h => (
                   <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {recentRequests.length === 0 ? (
-                <EmptyRow cols={6} msg="No recent requests." />
+                <EmptyRow cols={7} msg="No recent requests." />
               ) : (
                 recentRequests.map(req => (
                   <tr key={req.id}>
@@ -141,6 +172,7 @@ function OverviewTab({
                     </td>
                     <td style={{ fontSize: "0.875rem", color: "#374151" }}>{req.service}</td>
                     <td style={{ color: "#6b7280", fontSize: "0.75rem" }}>{req.date}</td>
+                    <td><span className={requestPriorityBadge(req.priority)}>{req.priority}</span></td>
                     <td><span className={requestStatusBadge(req.status)}>{req.status}</span></td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -226,17 +258,17 @@ function RequestsTab({
       {/* Main Table */}
       <div className="adm-table-wrap">
         <div className="adm-table-scroll">
-          <table className="adm-table" style={{ minWidth: 740 }}>
+          <table className="adm-table" style={{ minWidth: 800 }}>
             <thead>
               <tr>
-                {["Request ID", "Client", "Service & Location", "Date", "Status", "Actions"].map(h => (
+                {["Request ID", "Client", "Service & Location", "Date", "Priority", "Status", "Actions"].map(h => (
                   <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <EmptyRow cols={6} msg="No requests found." />
+                <EmptyRow cols={7} msg="No requests found." />
               ) : (
                 filtered.map(req => (
                   <tr key={req.id}>
@@ -247,6 +279,7 @@ function RequestsTab({
                       <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{req.location}</div>
                     </td>
                     <td style={{ fontSize: "0.8125rem", color: "#4b5563" }}>{req.date}</td>
+                    <td><span className={requestPriorityBadge(req.priority)}>{req.priority}</span></td>
                     <td><span className={requestStatusBadge(req.status)}>{req.status}</span></td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -284,6 +317,7 @@ function NotificationsTab({
   onDelete,
   onClearAll
 }) {
+  const navigate = useNavigate();
   const unreadCount = notifications.filter(n => n.status === "unread").length;
   
   const filtered = notifications.filter(n => {
@@ -365,6 +399,8 @@ function NotificationsTab({
         ) : (
           filtered.map(n => {
             const isUnread = n.status === "unread";
+            const isPaymentRequired = n.notif_type === "payment_required";
+            const isActivated = n.notif_type === "account_activated";
             
             let badgeBg = "#f3f4f6";
             let badgeColor = "#4b5563";
@@ -373,6 +409,57 @@ function NotificationsTab({
             else if (n.status === "replied") { badgeBg = "#dbeafe"; badgeColor = "#2563eb"; }
             else if (n.status === "archived") { badgeBg = "#e5e7eb"; badgeColor = "#4b5563"; }
 
+            // ── Special: Payment Required ────────────────────────────────────
+            if (isPaymentRequired) {
+              return (
+                <div key={n.id} style={{ border: "2px solid #f59e0b", borderRadius: "12px", padding: "1.5rem", backgroundColor: "#fffbeb", display: "flex", flexDirection: "column", gap: "1rem", boxShadow: "0 4px 12px rgba(245,158,11,0.15)" }}>
+                  <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                    <div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: "#fef3c7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <CreditCard size={20} style={{ color: "#d97706" }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#92400e", margin: 0 }}>🎉 Application Approved!</h3>
+                        <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{n.time}</span>
+                      </div>
+                      <p style={{ fontSize: "0.875rem", color: "#78350f", margin: "6px 0 0 0", lineHeight: 1.5 }}>{n.message}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #fde68a" }}>
+                    <button
+                      onClick={() => navigate("/payment")}
+                      style={{ flex: 1, padding: "10px 20px", backgroundColor: "#f59e0b", color: "#ffffff", border: "none", borderRadius: "8px", fontSize: "0.875rem", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                      onMouseOver={e => e.currentTarget.style.backgroundColor = "#d97706"}
+                      onMouseOut={e => e.currentTarget.style.backgroundColor = "#f59e0b"}
+                    >
+                      <CreditCard size={15} /> Proceed to Payment →
+                    </button>
+                    <button onClick={() => onDelete(n.id)} style={{ height: "40px", width: "40px", backgroundColor: "#fef2f2", color: "#ef4444", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Dismiss">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            // ── Special: Account Activated ───────────────────────────────────
+            if (isActivated) {
+              return (
+                <div key={n.id} style={{ border: "2px solid #10b981", borderRadius: "12px", padding: "1.5rem", backgroundColor: "#f0fdf4", display: "flex", gap: "1rem", alignItems: "flex-start", boxShadow: "0 4px 12px rgba(16,185,129,0.1)" }}>
+                  <div style={{ width: "44px", height: "44px", borderRadius: "50%", backgroundColor: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <CheckCircle size={20} style={{ color: "#059669" }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "#065f46", margin: 0 }}>✅ Account Activated!</h3>
+                    <p style={{ fontSize: "0.875rem", color: "#047857", margin: "6px 0 0 0", lineHeight: 1.5 }}>{n.message}</p>
+                    <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{n.time}</span>
+                  </div>
+                  <button onClick={() => onDelete(n.id)} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer" }}><X size={16} /></button>
+                </div>
+              );
+            }
+
+            // ── Standard notification card ───────────────────────────────────
             return (
               <div
                 key={n.id}
@@ -592,12 +679,12 @@ function NotificationsTab({
 export default function TechDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [requests, setRequests] = useState([
-    { id: "REQ-001", client: "Sarah Mensah", service: "Electrical Installation", date: "Jun 16, 2026", location: "Downtown", status: "pending" },
-    { id: "REQ-002", client: "Paul Eze", service: "Wiring Repair", date: "Jun 15, 2026", location: "Westside", status: "pending" },
-    { id: "REQ-003", client: "Linda Nkosi", service: "Panel Upgrade", date: "Jun 14, 2026", location: "Northgate", status: "accepted" },
-    { id: "REQ-004", client: "Kwame Asante", service: "Emergency Fix", date: "Jun 13, 2026", location: "Central", status: "rejected" },
-    { id: "REQ-005", client: "Amara Diallo", service: "Generator Setup", date: "Jun 12, 2026", location: "Harbor", status: "pending" },
-    { id: "REQ-006", client: "Victor Obi", service: "Socket Installation", date: "Jun 11, 2026", location: "Eastview", status: "accepted" },
+    { id: "REQ-001", client: "Sarah Mensah", service: "Electrical Installation", date: "Jun 16, 2026", location: "Downtown", priority: "normal", status: "pending" },
+    { id: "REQ-002", client: "Paul Eze", service: "Wiring Repair", date: "Jun 15, 2026", location: "Westside", priority: "urgent", status: "pending" },
+    { id: "REQ-003", client: "Linda Nkosi", service: "Panel Upgrade", date: "Jun 14, 2026", location: "Northgate", priority: "normal", status: "accepted" },
+    { id: "REQ-004", client: "Kwame Asante", service: "Emergency Fix", date: "Jun 13, 2026", location: "Central", priority: "emergency", status: "rejected" },
+    { id: "REQ-005", client: "Amara Diallo", service: "Generator Setup", date: "Jun 12, 2026", location: "Harbor", priority: "normal", status: "pending" },
+    { id: "REQ-006", client: "Victor Obi", service: "Socket Installation", date: "Jun 11, 2026", location: "Eastview", priority: "normal", status: "accepted" },
   ]);
 
   const [localNotifications, setLocalNotifications] = useState([
@@ -654,8 +741,52 @@ export default function TechDashboard() {
 
   const username = localStorage.getItem("username") || "Technician";
   const profilePic = localStorage.getItem("profile_picture");
+  const approvalStatus = localStorage.getItem("approval_status") || "pending";
+  const hasPaid = localStorage.getItem("has_paid") === "true";
 
   const userRef = useRef(null);
+
+  // Fetch real notifications from backend on mount
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    fetch("http://127.0.0.1:8000/api/notifications/my/", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(data => {
+        const mapped = data.map(n => ({
+          id: n.id,
+          title: n.notif_type === "payment_required"   ? "Application Approved — Action Required"
+               : n.notif_type === "account_activated"  ? "Account Activated"
+               : n.notif_type === "application_rejected" ? "Application Status Update"
+               : "Notification",
+          message: n.message,
+          notif_type: n.notif_type || "general",
+          status: n.is_read ? "read" : "unread",
+          time: new Date(n.created_at).toLocaleDateString(),
+          replyText: "",
+        }));
+        if (mapped.length > 0) setLocalNotifications(mapped);
+      })
+      .catch(() => {}); // keep static fallback on error
+  }, []);
+
+  // Also refresh user profile to get latest approval_status + has_paid
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    fetch("http://127.0.0.1:8000/api/auth/profile/", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(data => {
+        if (data.approval_status) localStorage.setItem("approval_status", data.approval_status);
+        if (data.has_paid !== undefined) localStorage.setItem("has_paid", String(data.has_paid));
+      })
+      .catch(() => {});
+  }, []);
+
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -668,17 +799,83 @@ export default function TechDashboard() {
     return () => document.removeEventListener("mousedown", clickOutside);
   }, []);
 
-  const handleAccept = (id) => {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "accepted" } : r));
-    if (viewRequest && viewRequest.id === id) {
-      setViewRequest(prev => ({ ...prev, status: "accepted" }));
+  // Fetch real service requests from backend on mount
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    fetch("http://127.0.0.1:8000/api/portal/requests/my/", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(data => {
+        if (data && data.length > 0) {
+          const mapped = data.map(r => {
+            const parsed = parseRequestMessage(r.message);
+            return {
+              id: r.id,
+              client: r.client_name,
+              service: parsed.description,
+              date: parsed.dateStr,
+              priority: parsed.priority,
+              location: r.location || "Not specified",
+              status: r.status,
+            };
+          });
+          setRequests(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAccept = async (id) => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/portal/requests/${id}/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: "accepted" })
+      });
+      if (res.ok) {
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "accepted" } : r));
+        if (viewRequest && viewRequest.id === id) {
+          setViewRequest(prev => ({ ...prev, status: "accepted" }));
+        }
+      } else {
+        alert("Failed to accept request.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred.");
     }
   };
 
-  const handleReject = (id) => {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
-    if (viewRequest && viewRequest.id === id) {
-      setViewRequest(prev => ({ ...prev, status: "rejected" }));
+  const handleReject = async (id) => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/portal/requests/${id}/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: "rejected" })
+      });
+      if (res.ok) {
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "rejected" } : r));
+        if (viewRequest && viewRequest.id === id) {
+          setViewRequest(prev => ({ ...prev, status: "rejected" }));
+        }
+      } else {
+        alert("Failed to reject request.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred.");
     }
   };
 
@@ -691,9 +888,16 @@ export default function TechDashboard() {
     }
   };
 
-  // Local notifications operations
+  // Notification operations — update local state + call API
   const handleLocalMarkRead = (id) => {
     setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "read" } : n));
+    const token = localStorage.getItem("access");
+    if (token) {
+      fetch("http://127.0.0.1:8000/api/notifications/mark-all-read/", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
   };
 
   const handleLocalReply = (id) => {
@@ -709,6 +913,13 @@ export default function TechDashboard() {
 
   const handleLocalDelete = (id) => {
     setLocalNotifications(prev => prev.filter(n => n.id !== id));
+    const token = localStorage.getItem("access");
+    if (token) {
+      fetch(`http://127.0.0.1:8000/api/notifications/${id}/`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
   };
 
   const handleLocalClearAll = () => {
@@ -964,6 +1175,7 @@ export default function TechDashboard() {
                 ["Requested Service", viewRequest.service],
                 ["Location / Address", viewRequest.location],
                 ["Preferred Date", viewRequest.date],
+                ["Priority", <span className={requestPriorityBadge(viewRequest.priority)}>{viewRequest.priority}</span>],
                 ["Request Status", <span className={requestStatusBadge(viewRequest.status)}>{viewRequest.status}</span>]
               ].map(([k, v]) => (
                 <div key={k} className="adm-detail-row">

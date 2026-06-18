@@ -4,6 +4,8 @@ import {
   ChevronDown, Search, Plus, Eye, EyeOff, Pencil, Trash2, X, Globe,
   Shield, Mail, Clock, Lock, AlertTriangle, DollarSign,
   TrendingUp, TrendingDown, User, ExternalLink, Menu,
+  CheckCircle, XCircle, FileText, MapPin, Phone, Briefcase,
+  Calendar, Star, ChevronRight, Filter, Download,
 } from "lucide-react";
 import "../styles/admin-dashboard.css";
 import { useNavigate } from "react-router-dom";
@@ -1984,6 +1986,608 @@ function SettingsTab() {
   );
 }
 
+const INIT_TECHNICIANS = [
+  {
+    id: "TRQ-001", ini: "KM", name: "Kwame Mensah", email: "kwame.mensah@gmail.com",
+    phone: "+237 670 123 456", whatsapp: "+237 670 123 456",
+    dob: "Mar 15, 1990", gender: "Male",
+    city: "Douala", neighborhood: "Bonanjo", address: "Rue de la Paix, Apt 3B",
+    profession: "Electrician", experience: "8 years", availability: "Mon–Sat, 7am–6pm", radius: "20 km",
+    bio: "Certified electrician specializing in residential and commercial wiring, solar panel installations, and generator maintenance. Safety-first approach with 8 years of proven results.",
+    skills: ["Solar Panels", "Wiring", "Generator Repair", "Smart Home"],
+    portfolio: ["commercial-project.pdf", "residential-wiring.jpg"],
+    docs: [
+      { name: "National ID (CNI)", file: "cni_kwame.pdf", verified: true },
+      { name: "Professional Certificate", file: "cert_electrician.pdf", verified: true },
+      { name: "Trade License", file: "license_2024.pdf", verified: false },
+    ],
+    submittedAt: "Mar 16, 2026 · 09:14 AM",
+    status: "pending",
+    rating: null,
+  },
+  {
+    id: "TRQ-002", ini: "FN", name: "Fatima Nkemdirim", email: "fatima.nk@mail.com",
+    phone: "+237 699 234 567", whatsapp: "+237 699 234 567",
+    dob: "Jul 22, 1993", gender: "Female",
+    city: "Yaoundé", neighborhood: "Bastos", address: "Avenue Kennedy, Villa 12",
+    profession: "Plumber", experience: "5 years", availability: "Mon–Fri, 8am–5pm", radius: "15 km",
+    bio: "Experienced plumber with expertise in pipe installations, leak repairs, and bathroom renovations. Fast response times and competitive pricing.",
+    skills: ["Pipe Installation", "Leak Repair", "Bathroom Renovation", "Water Heaters"],
+    portfolio: ["bathroom-reno.jpg", "pipe-install.pdf"],
+    docs: [
+      { name: "National ID (CNI)", file: "cni_fatima.pdf", verified: true },
+      { name: "Professional Certificate", file: "cert_plumbing.pdf", verified: false },
+      { name: "Insurance Certificate", file: "insurance_fatima.pdf", verified: false },
+    ],
+    submittedAt: "Mar 16, 2026 · 11:32 AM",
+    status: "pending",
+    rating: null,
+  },
+  {
+    id: "TRQ-003", ini: "JB", name: "Jean-Baptiste Fokou", email: "jb.fokou@gmail.com",
+    phone: "+237 655 345 678", whatsapp: "+237 655 345 678",
+    dob: "Nov 5, 1988", gender: "Male",
+    city: "Douala", neighborhood: "Akwa", address: "Boulevard de la Liberté 45",
+    profession: "HVAC Technician", experience: "12 years", availability: "Mon–Sun, 7am–8pm", radius: "30 km",
+    bio: "Senior HVAC technician with 12 years handling industrial and residential AC systems, refrigeration units, and ventilation. ISO-certified workshop.",
+    skills: ["AC Installation", "Refrigeration", "Ventilation", "Preventive Maintenance"],
+    portfolio: ["hvac-project.pdf", "workshop-cert.jpg"],
+    docs: [
+      { name: "National ID (CNI)", file: "cni_jb.pdf", verified: true },
+      { name: "HVAC Certification", file: "cert_hvac.pdf", verified: true },
+      { name: "ISO Certificate", file: "iso_cert.pdf", verified: true },
+    ],
+    submittedAt: "Mar 15, 2026 · 03:45 PM",
+    status: "approved",
+    rating: null,
+  },
+  {
+    id: "TRQ-004", ini: "AC", name: "Amina Coulibaly", email: "amina.c@outlook.com",
+    phone: "+237 677 456 789", whatsapp: "+237 677 456 789",
+    dob: "Apr 18, 1995", gender: "Female",
+    city: "Bafoussam", neighborhood: "Tamdja", address: "Quartier Commercial, Bloc C",
+    profession: "Painter & Decorator", experience: "4 years", availability: "Tue–Sun, 8am–6pm", radius: "10 km",
+    bio: "Creative painter and interior decorator with a keen eye for detail. Specializing in residential painting, murals, and modern interior design concepts.",
+    skills: ["Interior Painting", "Murals", "Wallpaper", "Color Consulting"],
+    portfolio: ["living-room.jpg", "mural-project.jpg"],
+    docs: [
+      { name: "National ID (CNI)", file: "cni_amina.pdf", verified: true },
+      { name: "Professional Certificate", file: "cert_painting.pdf", verified: false },
+    ],
+    submittedAt: "Mar 14, 2026 · 10:20 AM",
+    status: "rejected",
+    rating: null,
+  },
+  {
+    id: "TRQ-005", ini: "PO", name: "Pascal Owona", email: "pascal.owona@yahoo.fr",
+    phone: "+237 691 567 890", whatsapp: "+237 691 567 890",
+    dob: "Sep 30, 1985", gender: "Male",
+    city: "Douala", neighborhood: "Bassa", address: "Zone Industrielle, Rue 7",
+    profession: "Welder & Fabricator", experience: "15 years", availability: "Mon–Sat, 6am–7pm", radius: "25 km",
+    bio: "Master welder with 15 years in structural fabrication, gates, railings, and industrial metalwork. TIG, MIG, and arc welding certified.",
+    skills: ["TIG Welding", "MIG Welding", "Structural Fab", "Gates & Railings"],
+    portfolio: ["gate-project.jpg", "structure.pdf"],
+    docs: [
+      { name: "National ID (CNI)", file: "cni_pascal.pdf", verified: true },
+      { name: "Welding Certification", file: "cert_welding.pdf", verified: true },
+      { name: "Safety Training", file: "safety_cert.pdf", verified: false },
+    ],
+    submittedAt: "Mar 17, 2026 · 08:05 AM",
+    status: "pending",
+    rating: null,
+  },
+];
+
+function DocRow({ doc, onToggleVerify, onView, onDownload }) {
+  return (
+    <div className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
+      <div className="flex items-center gap-2.5" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ width: "24px", height: "24px", borderRadius: "50%", display: "flex", itemsCenter: "center", justifyContent: "center", backgroundColor: doc.verified ? "#d1fae5" : "#f3f4f6" }}>
+          {doc.verified
+            ? <CheckCircle size={13} style={{ color: "#059669" }} />
+            : <FileText size={12} style={{ color: "#9ca3af" }} />}
+        </div>
+        <div>
+          <p style={{ fontSize: "12px", fontWeight: 500, color: "#1f2937", margin: 0 }}>{doc.name}</p>
+          <p style={{ fontSize: "11px", color: "#9ca3af", margin: 0, wordBreak: "break-all" }}>{doc.file}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <span 
+          onClick={onToggleVerify}
+          style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "9999px", backgroundColor: doc.verified ? "#d1fae5" : "#fef3c7", color: doc.verified ? "#065f46" : "#b45309", cursor: "pointer" }}
+          className="hover:opacity-85 transition-opacity"
+        >
+          {doc.verified ? "Verified" : "Pending"}
+        </span>
+        <button 
+          onClick={onView}
+          style={{ border: "none", backgroundColor: "transparent", color: "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: "24px", height: "24px", borderRadius: "4px" }}
+          className="hover:bg-gray-200 transition-colors"
+          title="View Document"
+        >
+          <Eye size={13} style={{ display: "block" }} />
+        </button>
+        <button 
+          onClick={onDownload}
+          style={{ border: "none", backgroundColor: "transparent", color: "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: "24px", height: "24px", borderRadius: "4px" }}
+          className="hover:bg-gray-200 transition-colors"
+          title="Download Document"
+        >
+          <Download size={13} style={{ display: "block" }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TechnicianModal({ open, onClose, children }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    if (open) document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose} style={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, padding: "16px" }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()} style={{ backgroundColor: "#ffffff", borderRadius: "16px", width: "100%", maxWidth: "768px", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function TechnicianDetailModal({ tech, onClose, onApprove, onReject, onToggleVerifyDoc }) {
+  const allDocsVerified = tech.docs.every(d => d.verified);
+
+  return (
+    <TechnicianModal open onClose={onClose}>
+      <div style={{ padding: "24px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ width: "56px", height: "56px", borderRadius: "16px", backgroundColor: "#f59e0b", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "bold" }}>
+              {tech.ini}
+            </div>
+            <div>
+              <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#111827", margin: 0 }}>{tech.name}</h2>
+              <p style={{ fontSize: "14px", color: "#6b7280", margin: "4px 0 0 0" }}>{tech.profession} · {tech.city}</p>
+              <p style={{ fontSize: "12px", color: "#9ca3af", margin: "2px 0 0 0" }}>Submitted {tech.submittedAt}</p>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ border: "none", backgroundColor: "transparent", cursor: "pointer", color: "#9ca3af" }} className="hover:text-gray-600 transition-colors"><X size={20} /></button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
+          {/* Left column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Personal info */}
+            <section>
+              <h3 style={{ fontSize: "12px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Personal Information</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {[
+                  [User, "Name", tech.name],
+                  [Mail, "Email", tech.email],
+                  [Phone, "Phone", tech.phone],
+                  [Calendar, "Date of Birth", tech.dob],
+                  [User, "Gender", tech.gender],
+                  [MapPin, "Location", `${tech.neighborhood}, ${tech.city}`],
+                ].map(([Icon, label, value]) => (
+                  <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <Icon size={14} style={{ color: "#f59e0b", marginTop: "2px", flexShrink: 0 }} />
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#9ca3af", display: "block" }}>{label}</span>
+                      <span style={{ fontSize: "14px", color: "#1f2937", fontWeight: 500 }}>{value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Professional info */}
+            <section>
+              <h3 style={{ fontSize: "12px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Professional Profile</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {[
+                  [Briefcase, "Profession", tech.profession],
+                  [Star, "Experience", tech.experience],
+                  [Clock, "Availability", tech.availability],
+                  [MapPin, "Service Radius", tech.radius],
+                ].map(([Icon, label, value]) => (
+                  <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <Icon size={14} style={{ color: "#f59e0b", marginTop: "2px", flexShrink: 0 }} />
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#9ca3af", display: "block" }}>{label}</span>
+                      <span style={{ fontSize: "14px", color: "#1f2937", fontWeight: 500 }}>{value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: "12px", padding: "12px", backgroundColor: "#f9fafb", borderRadius: "8px" }}>
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 4px 0" }}>Bio</p>
+                <p style={{ fontSize: "12px", color: "#374151", lineHeight: 1.5, margin: 0 }}>{tech.bio}</p>
+              </div>
+              <div style={{ marginTop: "12px" }}>
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 8px 0" }}>Skills</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {tech.skills.map(s => (
+                    <span key={s} style={{ padding: "2px 8px", backgroundColor: "#fef3c7", color: "#92400e", fontSize: "12px", borderRadius: "9999px", fontWeight: 500 }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Right column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Documents */}
+            <section>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                <h3 style={{ fontSize: "12px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>Supporting Documents</h3>
+                <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "9999px", backgroundColor: allDocsVerified ? "#d1fae5" : "#fef3c7", color: allDocsVerified ? "#065f46" : "#92400e" }}>
+                  {tech.docs.filter(d => d.verified).length}/{tech.docs.length} verified
+                </span>
+              </div>
+              <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "12px" }}>
+                {tech.docs.map(d => (
+                  <DocRow 
+                    key={d.name} 
+                    doc={d} 
+                    onToggleVerify={() => onToggleVerifyDoc(tech.id, d.name)}
+                    onView={() => {
+                      const url = d.file.startsWith("http") ? d.file : "http://127.0.0.1:8000" + d.file;
+                      window.open(url, "_blank");
+                    }}
+                    onDownload={() => {
+                      const url = d.file.startsWith("http") ? d.file : "http://127.0.0.1:8000" + d.file;
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.setAttribute('download', d.name);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                  />
+                ))}
+              </div>
+            </section>
+
+            {/* Portfolio */}
+            <section>
+              <h3 style={{ fontSize: "12px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Portfolio Files</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {tech.portfolio.map(f => (
+                  <div key={f} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", backgroundColor: "#f9fafb", borderRadius: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <FileText size={13} style={{ color: "#9ca3af" }} />
+                      <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500 }}>{f}</span>
+                    </div>
+                    <button style={{ border: "none", backgroundColor: "transparent", color: "#f59e0b", cursor: "pointer" }} className="hover:text-amber-600 transition-colors">
+                      <Download size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Approval note */}
+            {tech.status === "pending" && (
+              <section style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "#1e40af", margin: "0 0 4px 0" }}>Upon approval, the technician will receive:</p>
+                <p style={{ fontSize: "12px", color: "#1d4ed8", lineHeight: 1.5, fontStyle: "italic", margin: 0 }}>
+                  "Your profile has been verified and approved. Please proceed to subscription payment to activate your account and become visible to clients."
+                </p>
+              </section>
+            )}
+          </div>
+        </div>
+
+        {/* Action footer */}
+        {tech.status === "pending" && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "12px", marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #f3f4f6" }}>
+            <button onClick={() => onReject(tech.id)}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "8px", border: "1px solid #fca5a5", color: "#dc2626", backgroundColor: "#ffffff", fontSize: "14px", fontWeight: 600, cursor: "pointer" }} className="hover:bg-red-50 transition-colors">
+              <XCircle size={15} /> Reject
+            </button>
+            <button onClick={() => onApprove(tech.id)}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "8px", border: "none", color: "#ffffff", backgroundColor: "#16a34a", fontSize: "14px", fontWeight: 600, cursor: "pointer" }} className="hover:bg-green-700 transition-colors">
+              <CheckCircle size={15} /> Approve Account
+            </button>
+          </div>
+        )}
+      </div>
+    </TechnicianModal>
+  );
+}
+
+function NotificationsTab({ techs, setTechs }) {
+  const [selected, setSelected] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [toast, setToast] = useState(null);
+
+  function showToast(msg, type = "success") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  function toggleVerifyDoc(techId, docName) {
+    setTechs(prev => prev.map(t => {
+      if (t.id === techId) {
+        const updatedDocs = t.docs.map(d => d.name === docName ? { ...d, verified: !d.verified } : d);
+        setSelected(prevSelected => prevSelected && prevSelected.id === techId ? { ...prevSelected, docs: updatedDocs } : prevSelected);
+        return { ...t, docs: updatedDocs };
+      }
+      return t;
+    }));
+  }
+
+  async function approve(id) {
+    const token = localStorage.getItem("access");
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/auth/admin/technicians/${id}/approve/`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setTechs(prev => prev.map(t => t.id === id ? { ...t, status: "approved" } : t));
+        setSelected(null);
+        showToast("Account approved — notification sent to technician.", "success");
+      } else {
+        showToast("Failed to approve. Please try again.", "error");
+      }
+    } catch {
+      showToast("Network error. Please try again.", "error");
+    }
+  }
+
+  async function reject(id) {
+    const token = localStorage.getItem("access");
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/auth/admin/technicians/${id}/reject/`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Your application did not meet our current requirements." }),
+      });
+      if (res.ok) {
+        setTechs(prev => prev.map(t => t.id === id ? { ...t, status: "rejected" } : t));
+        setSelected(null);
+        showToast("Application rejected — technician has been notified.", "error");
+      } else {
+        showToast("Failed to reject. Please try again.", "error");
+      }
+    } catch {
+      showToast("Network error. Please try again.", "error");
+    }
+  }
+
+  const counts = {
+    all: techs.length,
+    pending: techs.filter(t => t.status === "pending").length,
+    approved: techs.filter(t => t.status === "approved").length,
+    rejected: techs.filter(t => t.status === "rejected").length,
+  };
+
+  const visible = techs.filter(t => {
+    const matchFilter = filter === "all" || t.status === filter;
+    const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.profession.toLowerCase().includes(search.toLowerCase()) ||
+      t.city.toLowerCase().includes(search.toLowerCase());
+    return matchFilter && matchSearch;
+  });
+
+  const statusConfig = {
+    pending:  { label: "Pending Review", cls: "bg-amber-100 text-amber-700",  dot: "bg-amber-500"  },
+    approved: { label: "Approved",       cls: "bg-green-100 text-green-700",   dot: "bg-green-500"  },
+    rejected: { label: "Rejected",       cls: "bg-red-100 text-red-700",       dot: "bg-red-500"    },
+  };
+
+  return (
+    <div className="space-y-5 relative" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-[60] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg text-sm font-medium text-white transition-all ${toast.type === "success" ? "bg-green-600" : "bg-red-500"}`} style={{ position: "fixed", top: "20px", right: "20px", zIndex: 2000, display: "flex", alignItems: "center", gap: "12px", padding: "14px 20px", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", fontSize: "14px", fontWeight: 500, color: "#ffffff", backgroundColor: toast.type === "success" ? "#16a34a" : "#ef4444" }}>
+          {toast.type === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900" style={{ fontSize: "24px", fontWeight: "bold", color: "#111827", margin: 0 }}>Technician Verifications</h1>
+        <p className="text-sm text-gray-500 mt-1" style={{ fontSize: "14px", color: "#6b7280", margin: "4px 0 0 0" }}>Review applications, validate documents, and approve or reject technician accounts.</p>
+      </div>
+
+      {/* Stats strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "16px" }}>
+        {[
+          { key: "all",      label: "Total Applications", count: counts.all,      color: "text-gray-900", border: "border-gray-200", activeBorder: "border-amber-500" },
+          { key: "pending",  label: "Pending Review",     count: counts.pending,  color: "text-amber-600", border: "border-gray-200", activeBorder: "border-amber-500" },
+          { key: "approved", label: "Approved",           count: counts.approved, color: "text-green-600", border: "border-gray-200", activeBorder: "border-green-500" },
+          { key: "rejected", label: "Rejected",           count: counts.rejected, color: "text-red-600",   border: "border-gray-200", activeBorder: "border-red-500" },
+        ].map(({ key, label, count, color, border, activeBorder }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setFilter(key)}
+            className={`p-5 bg-white rounded-2xl border text-left transition-all cursor-pointer ${
+              filter === key ? `${activeBorder} border-2 shadow-sm` : `${border} shadow-sm hover:border-gray-300`
+            }`}
+            style={{
+              padding: "20px",
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              textAlign: "left",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              border: filter === key ? "2px solid" : "1px solid #e5e7eb",
+              borderColor: filter === key ? (key === "approved" ? "#10b981" : key === "rejected" ? "#ef4444" : "#f59e0b") : "#e5e7eb"
+            }}
+          >
+            <div className={`text-3xl font-extrabold ${color}`} style={{ fontSize: "30px", fontWeight: "800", color: key === "approved" ? "#10b981" : key === "rejected" ? "#ef4444" : key === "pending" ? "#d97706" : "#111827" }}>{count}</div>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "#6b7280", marginTop: "4px" }}>{label}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3" style={{ display: "flex", flexWrap: "wrap", itemsCenter: "center", gap: "12px" }}>
+        <div className="relative flex-1 sm:max-w-xs" style={{ position: "relative", flex: 1, maxWidth: "320px" }}>
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, profession, city..."
+            style={{ width: "100%", padding: "10px 16px 10px 40px", borderRadius: "12px", border: "1px solid #e5e7eb", fontSize: "14px", outline: "none", backgroundColor: "#ffffff" }}
+          />
+        </div>
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-600" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", borderRadius: "12px", border: "1px solid #e5e7eb", backgroundColor: "#ffffff", fontSize: "14px", color: "#4b5563" }}>
+          <Filter size={13} style={{ color: "#9ca3af" }} />
+          <span>Filter applied:</span>
+          <span style={{ fontWeight: 600, color: "#111827", textTransform: "capitalize" }}>{filter === "all" ? "All" : filter}</span>
+        </div>
+      </div>
+
+      {/* Grid */}
+      {visible.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm py-16 text-center" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #f3f4f6", padding: "64px 0", textAlign: "center" }}>
+          <Bell size={32} style={{ color: "#d1d5db", margin: "0 auto 12px" }} />
+          <p style={{ fontSize: "14px", color: "#9ca3af", margin: 0 }}>No applications match this filter.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+          {visible.map(tech => {
+            const cfg = statusConfig[tech.status];
+            const totalDocs = tech.docs.length;
+            const verifiedDocs = tech.docs.filter(d => d.verified).length;
+            
+            return (
+              <div key={tech.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow" style={{ backgroundColor: "#ffffff", borderRadius: "16px", border: "1px solid #f3f4f6", padding: "20px", display: "flex", flexDirection: "column", justifyContent: "space-between", transition: "box-shadow 0.2s" }}>
+                <div>
+                  {/* Header */}
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{ width: "44px", height: "44px", borderRadius: "12px", backgroundColor: "#f59e0b", color: "#ffffff", display: "flex", alignItems: "center", justify: "center", fontWeight: "bold", fontSize: "14px" }}>
+                        {tech.ini}
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: "14px", fontWeight: "bold", color: "#111827", margin: 0 }}>{tech.name}</h4>
+                        <p style={{ fontSize: "12px", fontWeight: 600, color: "#f59e0b", margin: "2px 0 0 0" }}>{tech.profession}</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#9ca3af", marginTop: "4px" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "2px" }}><MapPin size={11} />{tech.city}</span>
+                          <span>•</span>
+                          <span style={{ display: "flex", alignItems: "center", gap: "2px" }}><Briefcase size={11} />{tech.experience}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "9999px", backgroundColor: tech.status === "approved" ? "#d1fae5" : tech.status === "rejected" ? "#fee2e2" : "#fef3c7", color: tech.status === "approved" ? "#065f46" : tech.status === "rejected" ? "#991b1b" : "#92400e" }}>
+                      {cfg.label}
+                    </span>
+                  </div>
+
+                  {/* Metadata Grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px", padding: "12px 0", borderTop: "1px solid #f9fafb", borderBottom: "1px solid #f9fafb", fontSize: "11px" }}>
+                    <div>
+                      <span style={{ color: "#9ca3af", display: "block", marginBottom: "2px" }}>Email</span>
+                      <span style={{ color: "#374151", fontWeight: 500, display: "block", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{tech.email}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: "#9ca3af", display: "block", marginBottom: "2px" }}>Availability</span>
+                      <span style={{ color: "#374151", fontWeight: 500, display: "block" }}>{tech.availability.split(",")[0]}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: "#9ca3af", display: "block", marginBottom: "2px" }}>Submitted</span>
+                      <span style={{ color: "#374151", fontWeight: 500, display: "block" }}>{tech.submittedAt.split("·")[0]}</span>
+                    </div>
+                    <div>
+                      <span style={{ color: "#9ca3af", display: "block", marginBottom: "2px" }}>Documents</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                        <div style={{ flex: 1, backgroundColor: "#f3f4f6", height: "6px", borderRadius: "9999px", overflow: "hidden" }}>
+                          <div
+                            style={{
+                              height: "100%",
+                              borderRadius: "9999px",
+                              transition: "all 0.3s",
+                              width: `${(verifiedDocs / totalDocs) * 100}%`,
+                              backgroundColor: verifiedDocs === totalDocs ? "#10b981" : verifiedDocs === 2 ? "#f59e0b" : "#eab308"
+                            }}
+                          />
+                        </div>
+                        <span style={{ fontSize: "10px", color: "#6b7280", fontWeight: 500 }}>{verifiedDocs}/{totalDocs}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skills pills */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "16px", marginBottom: "20px" }}>
+                    {tech.skills.slice(0, 3).map(skill => (
+                      <span key={skill} style={{ padding: "2px 8px", backgroundColor: "#f3f4f6", color: "#4b5563", fontSize: "10px", borderRadius: "6px", fontWeight: 500 }}>
+                        {skill}
+                      </span>
+                    ))}
+                    {tech.skills.length > 3 && (
+                      <span style={{ padding: "2px 8px", backgroundColor: "#f3f4f6", color: "#9ca3af", fontSize: "10px", borderRadius: "6px", fontWeight: 500 }}>
+                        +{tech.skills.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ marginTop: "auto" }}>
+                  {tech.status === "pending" ? (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        onClick={() => reject(tech.id)}
+                        style={{ flex: 1, padding: "8px 0", borderRadius: "12px", border: "1px solid #fca5a5", color: "#ef4444", backgroundColor: "#ffffff", fontSize: "12px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", cursor: "pointer" }}
+                        className="hover:bg-red-50 transition-colors"
+                      >
+                        <XCircle size={13} /> Reject
+                      </button>
+                      <button
+                        onClick={() => setSelected(tech)}
+                        style={{ flex: 1, padding: "8px 0", borderRadius: "12px", border: "1px solid #e5e7eb", color: "#4b5563", backgroundColor: "#ffffff", fontSize: "12px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", cursor: "pointer" }}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <Eye size={13} /> Review
+                      </button>
+                      <button
+                        onClick={() => approve(tech.id)}
+                        style={{ flex: 1, padding: "8px 0", borderRadius: "12px", border: "none", color: "#ffffff", backgroundColor: "#16a34a", fontSize: "12px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", cursor: "pointer" }}
+                        className="hover:bg-green-700 transition-colors"
+                      >
+                        <CheckCircle size={13} /> Approve
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setSelected(tech)}
+                      style={{ width: "100%", padding: "8px 0", backgroundColor: "#f9fafb", border: "1px solid #f3f4f6", borderRadius: "12px", color: "#4b5563", fontSize: "12px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", cursor: "pointer" }}
+                      className="hover:bg-gray-100 transition-colors"
+                    >
+                      View Details <ChevronRight size={13} style={{ marginTop: "2px" }} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {selected && (
+        <TechnicianDetailModal
+          tech={selected}
+          onClose={() => setSelected(null)}
+          onApprove={approve}
+          onReject={reject}
+          onToggleVerifyDoc={toggleVerifyDoc}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Shell ────────────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -1991,17 +2595,74 @@ const TABS = [
   { key: "users",    label: "Users",     Icon: Users        },
   { key: "products", label: "Products",  Icon: Package      },
   { key: "orders",   label: "Orders",    Icon: ShoppingCart },
+  { key: "notifications", label: "Notifications", Icon: Bell },
   { key: "settings", label: "Settings",  Icon: Settings     },
 ];
 
 export default function AdminDashboard() {
   const [tab, setTab]               = useState("overview");
+  const [techs, setTechs]           = useState(INIT_TECHNICIANS);
+  const [techsLoading, setTechsLoading] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Get admin name from localStorage — Login.jsx stores as "username" key
   const adminName = localStorage.getItem("username") ?? "Admin";
   const profilePic = localStorage.getItem("profile_picture");
+
+  // Fetch real technician applications from backend when Notifications tab is opened
+  useEffect(() => {
+    if (tab !== "notifications") return;
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    setTechsLoading(true);
+    fetch("http://127.0.0.1:8000/api/auth/admin/technicians/", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(data => {
+        // Map API shape → UI shape expected by NotificationsTab
+        const mapped = data.map(t => {
+          const app = t.application || {};
+          const firstName = app.first_name || "";
+          const lastName  = app.last_name  || "";
+          const name = (firstName + " " + lastName).trim() || t.username;
+          const ini  = (firstName[0] || "?") + (lastName[0] || "");
+          return {
+            id:           t.id,
+            ini:          ini.toUpperCase(),
+            name,
+            email:        t.email,
+            phone:        app.phone        || "",
+            whatsapp:     app.whatsapp     || "",
+            dob:          app.dob          || "",
+            gender:       app.gender       || "",
+            city:         app.city         || "",
+            neighborhood: "",
+            address:      app.address      || "",
+            profession:   (app.service === "other" && app.custom_service) ? `other (${app.custom_service})` : (app.service || t.specialty || ""),
+            experience:   app.experience   || "",
+            availability: app.availability || "",
+            radius:       app.radius       || "",
+            bio:          app.about        || "",
+            skills:       app.specializations ? app.specializations.split(",").map(s => s.trim()) : [],
+            portfolio:    app.portfolio_urls || [],
+            docs:         (app.doc_urls || []).map(url => ({
+              name: url.split("/").pop(),
+              file: url,
+              verified: false,
+            })),
+            submittedAt:  app.submitted_at ? new Date(app.submitted_at).toLocaleString() : t.date_joined,
+            status:       t.approval_status,
+            has_paid:     t.has_paid,
+            rating:       null,
+          };
+        });
+        setTechs(mapped);
+      })
+      .catch(() => { /* keep static fallback data */ })
+      .finally(() => setTechsLoading(false));
+  }, [tab]);
 
   function handleLogout() {
     localStorage.removeItem("access");
@@ -2011,6 +2672,8 @@ export default function AdminDashboard() {
     localStorage.removeItem("profile_picture");
     window.location.href = "/login";
   }
+
+  const pendingCount = techs.filter(t => t.status === "pending").length;
 
   return (
     <div className="adm-scope">
@@ -2144,9 +2807,25 @@ export default function AdminDashboard() {
               key={key}
               className={`adm-tab-btn${tab === key ? " active" : ""}`}
               onClick={() => setTab(key)}
+              style={{ display: "flex", alignItems: "center", gap: "6px" }}
             >
               <Icon size={14} />
-              {label}
+              <span>{label}</span>
+              {key === "notifications" && pendingCount > 0 && (
+                <span
+                  style={{
+                    backgroundColor: "#FF8C00",
+                    color: "white",
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    padding: "1px 6px",
+                    borderRadius: "9999px",
+                    marginLeft: "2px"
+                  }}
+                >
+                  {pendingCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -2158,6 +2837,7 @@ export default function AdminDashboard() {
         {tab === "users"     && <UsersTab />}
         {tab === "products"  && <ProductsTab />}
         {tab === "orders"    && <OrdersTab />}
+        {tab === "notifications" && <NotificationsTab techs={techs} setTechs={setTechs} />}
         {tab === "settings"  && <SettingsTab />}
       </main>
     </div>

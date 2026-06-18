@@ -13,7 +13,14 @@ class TechnicianListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        qs = User.objects.filter(role='technician')
+        # Only show technicians who are fully activated: approved by admin AND paid
+        qs = User.objects.filter(
+            role='technician',
+            approval_status='approved',
+            has_paid=True,
+            is_suspended=False,
+        )
+
         search = self.request.query_params.get('search', '').strip()
         if search:
             qs = qs.filter(username__icontains=search)
@@ -25,9 +32,10 @@ class TechnicianListView(generics.ListAPIView):
         availability = self.request.query_params.get('availability', '').strip().lower()
         if availability in ('available', 'unavailable'):
             available_flag = (availability == 'available')
-            qs = qs.filter(is_active=True, is_suspended=False) if available_flag else qs.exclude(
-                Q(is_active=True) & Q(is_suspended=False)
-            )
+            if available_flag:
+                qs = qs.filter(is_active=True)
+            else:
+                qs = qs.exclude(is_active=True)
 
         return qs.order_by('-date_joined', 'username')
 
@@ -43,7 +51,16 @@ class ServiceRequestCreateView(APIView):
     def post(self, request):
         serializer = ServiceRequestSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
-            serializer.save()
+            sr = serializer.save()
+            try:
+                Notification.objects.create(
+                    recipient_id=sr.technician_id,
+                    request_id=str(sr.id),
+                    message=f"New service request from {sr.client_name}: '{sr.message[:30]}...'",
+                    notif_type="new_request"
+                )
+            except Exception as e:
+                print(f"Failed to create request notification: {e}")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -6,7 +6,7 @@
   background: #f2f2f2; 
   margin: 0; 
   font-family: "Poppins", sans-serif;
-  padding: 2rem 0;
+  padding: 2rem 2rem;
 }
 
 /* Container Layout */
@@ -25,12 +25,17 @@
 .register-tech-container {
   font-family: "Poppins", sans-serif; 
   display: flex;
-  width: 950px;              /* Slightly wider for grid inputs */
-  height: 750px;             /* Taller to fit all documents and grid */
-  border-radius: 16px;
+  width: 1320px;
+  height: 880px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   background: #fff;
+}
+
+.register-tech-container .register-left {
+  width: 320px;
+  flex: none;
 }
 
 /* Left Section */
@@ -127,14 +132,28 @@
 
 /* Technician Scrollable Right Section */
 .register-tech-right {
-  flex: 1.2;                 /* Give slightly more flex weight to form */
+  flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;   /* Align start to scroll naturally */
-  background: #ffffff;
-  overflow-y: auto;          /* Scroll vertical */
+  flex-direction: column;
+  background: #f1f5f9;
+  overflow-y: auto;
   max-height: 100%;
-  padding: 2.5rem 1.5rem;
+  padding: 2.5rem;
+  box-sizing: border-box;
+}
+
+.register-tech-right::-webkit-scrollbar {
+  width: 8px;
+}
+.register-tech-right::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.register-tech-right::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.register-tech-right::-webkit-scrollbar-thumb:hover {
+  background: #ff8c00;
 }
 
 .register-form-box {
@@ -291,4 +310,261 @@
   color: #166534;
   border-radius: 8px;
   font-size: 0.8125rem;
+}
+
+/* ── Scoped Multi-step Technician styling overrides ────────────────────── */
+.tech-card {
+  background: #ffffff;
+  border: 1px solid rgba(188, 10, 18, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.tech-title {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
+
+.tech-subtitle {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin: -12px 0 16px 0;
+}
+
+.tech-input-group {
+  margin-bottom: 16px;
+}
+
+.tech-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.tech-label-required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.tech-input,
+.tech-select,
+.tech-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  outline: none;
+  background-color: #f8fafc;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+.tech-input:focus,
+.tech-select:focus,
+.tech-textarea:focus {
+  border-color: #ff8c00;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1);
+}
+
+/* Profile Photo Circle dropzone */
+.tech-avatar-circle-container {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.tech-avatar-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px dashed #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.tech-avatar-circle:hover {
+  border-color: #ff8c00;
+  background-color: #fffaf0;
+}
+
+.tech-avatar-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Stepper segment lines */
+.tech-stepper-line-bg {
+  position: absolute;
+  top: 16px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background-color: #e2e8f0;
+  z-index: 0;
+}
+
+.tech-stepper-line-fg {
+  position: absolute;
+  top: 16px;
+  left: 10%;
+  height: 2px;
+  background-color: #ff8c00;
+  z-index: 0;
+  transition: width 0.3s ease;
+}
+
+/* Portfolio grid images */
+.tech-portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tech-portfolio-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.tech-portfolio-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tech-portfolio-item-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.75);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+.tech-portfolio-item-remove:hover {
+  background: #ef4444;
+}
+
+.tech-portfolio-add-box {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px dashed #cbd5e1;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tech-portfolio-add-box:hover {
+  border-color: #ff8c00;
+  background-color: #fffaf0;
+}
+
+/* Documents Check lists */
+.tech-recommend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+.tech-recommend-badge-opt {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+/* Footer layout positioning */
+.tech-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.tech-btn-back {
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tech-btn-back:hover:not(:disabled) {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+.tech-btn-back:disabled {
+  color: #cbd5e1;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+}
+
+.tech-btn-next {
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  background-color: #ff8c00;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tech-btn-next:hover:not(:disabled) {
+  background-color: #e67e00;
+}
+.tech-btn-next:disabled {
+  background-color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.tech-dot-indicator {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.tech-dot {
+  height: 6px;
+  border-radius: 3px;
+  background-color: #e2e8f0;
+  transition: all 0.3s ease;
 }

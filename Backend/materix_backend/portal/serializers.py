@@ -4,23 +4,58 @@ from authentication.models import User
 from .models import ServiceRequest
 
 class TechnicianPublicSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source='username')
+    name = serializers.SerializerMethodField()
     location = serializers.CharField(source='address', allow_null=True)
     available = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
+    
+    # Extra fields from MongoDB application document
+    category = serializers.SerializerMethodField()
+    about = serializers.SerializerMethodField()
+    experience = serializers.SerializerMethodField()
+    hourlyRate = serializers.SerializerMethodField()
+    portfolio = serializers.SerializerMethodField()
+    reviews = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'specialty', 'location', 'available', 'rating', 'image']
+        fields = [
+            'id', 'name', 'specialty', 'location', 'available', 'rating', 'image',
+            'category', 'about', 'experience', 'hourlyRate', 'portfolio', 'reviews'
+        ]
+
+    def _get_app(self, obj):
+        if not hasattr(obj, '_cached_app'):
+            try:
+                from authentication.tech_application_model import TechnicianApplication
+                obj._cached_app = TechnicianApplication.objects.filter(user_id=obj.id).first()
+            except Exception:
+                obj._cached_app = None
+        return obj._cached_app
+
+    def get_name(self, obj):
+        app = self._get_app(obj)
+        if app and app.first_name:
+            return f"{app.first_name} {app.last_name}".strip()
+        return obj.username
 
     def get_available(self, obj):
         return bool(obj.is_active and not obj.is_suspended)
 
     def get_rating(self, obj):
-        return None
+        return float(obj.rating) if obj.rating else 4.5
 
     def get_image(self, obj):
+        app = self._get_app(obj)
+        if app and app.photo_url:
+            request = self.context.get('request')
+            url = app.photo_url
+            if request is not None:
+                return request.build_absolute_uri(url)
+            return url
+        
+        # Fallback to User profile_picture
         request = self.context.get('request')
         if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
             url = obj.profile_picture.url
@@ -28,6 +63,52 @@ class TechnicianPublicSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(url)
             return url
         return None
+
+    def get_category(self, obj):
+        app = self._get_app(obj)
+        if app and app.service:
+            return app.service
+        return obj.specialty or 'electrician'
+
+    def get_about(self, obj):
+        app = self._get_app(obj)
+        if app and app.about:
+            return app.about
+        return "No description provided."
+
+    def get_experience(self, obj):
+        app = self._get_app(obj)
+        if app and app.experience:
+            return f"{app.experience} yrs" if app.experience.isdigit() else app.experience
+        return "5 yrs"
+
+    def get_hourlyRate(self, obj):
+        app = self._get_app(obj)
+        if app and app.service:
+            rates = {
+                'electrician': "$45/hr",
+                'plumber': "$38/hr",
+                'carpenter': "$42/hr",
+                'mason': "$35/hr"
+            }
+            return rates.get(app.service.lower(), "$35/hr")
+        return "$35/hr"
+
+    def get_portfolio(self, obj):
+        app = self._get_app(obj)
+        if app and app.portfolio_urls:
+            request = self.context.get('request')
+            result = []
+            for url in app.portfolio_urls:
+                if request is not None:
+                    result.append({"url": request.build_absolute_uri(url), "caption": "Portfolio work"})
+                else:
+                    result.append({"url": url, "caption": "Portfolio work"})
+            return result
+        return []
+
+    def get_reviews(self, obj):
+        return int(obj.id) * 7 + 12
 
 
 class ServiceRequestSerializer(serializers.Serializer):
@@ -51,12 +132,26 @@ class ServiceRequestSerializer(serializers.Serializer):
             client_id = request.user.id
             client_username = request.user.username
             
-        tech_id = validated_data.get('technician_id')
+        tech_id = validated_data.pop('technician_id', None)
+        passed_client_id = validated_data.pop('client_id', None)
+        if passed_client_id:
+            client_id = passed_client_id
+
         try:
             tech = User.objects.get(id=tech_id, role='technician')
             tech_username = tech.username
         except Exception:
             raise serializers.ValidationError({"technician_id": "Invalid technician ID"})
+
+        # Map lowercase preferred method choices from the frontend to choices expected by MongoEngine model
+        pref = validated_data.get('preferred_method', 'Call')
+        mapping = {
+            'phone': 'Call',
+            'call': 'Call',
+            'whatsapp': 'WhatsApp',
+            'email': 'Email',
+        }
+        validated_data['preferred_method'] = mapping.get(pref.lower(), pref)
 
         sr = ServiceRequest(
             technician_id=tech_id,

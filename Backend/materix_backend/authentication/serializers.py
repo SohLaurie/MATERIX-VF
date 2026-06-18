@@ -3,6 +3,7 @@ from django.contrib.auth.hashers import make_password
 from .models import User
 from django.contrib.auth import authenticate
 
+
 # Registration serializer
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -10,27 +11,16 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id',
-            'username',
-            'email',
-            'password',
-            'role',
-            'specialty',
-            'address',
-            'cni_number',
-            'profile_picture',
+            'id', 'username', 'email', 'password', 'role',
+            'specialty', 'address', 'cni_number', 'profile_picture',
         ]
 
     def validate(self, data):
-        # All clients and technicians must have an address
-        if not data.get('address'):
-            raise serializers.ValidationError("Address is required.")
-        # Enforce technician-specific fields
-        if data['role'] == 'technician':
-            if not data.get('specialty') or not data.get('cni_number'):
-                raise serializers.ValidationError(
-                    "Technician must provide specialty and CNI number."
-                )
+        # Enforce technician-specific fields (address/cni are stored in MongoDB application doc)
+        if data.get('role') == 'technician':
+            if not data.get('specialty') and not data.get('cni_number'):
+                # These are passed from the final wizard step payload; soft validation
+                pass
         return data
 
     def create(self, validated_data):
@@ -38,22 +28,30 @@ class RegisterSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-# Serializer to return user info (for profile or responses)
+# Full user serializer (for profile responses, admin views)
 class UserSerializer(serializers.ModelSerializer):
+    specialty = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = [
-            'id',
-            'username',
-            'email',
-            'role',
-            'specialty',
-            'address',
-            'cni_number',
-            'is_active',
-            'date_joined',
-            'profile_picture',
+            'id', 'username', 'email', 'role', 'specialty',
+            'address', 'cni_number', 'is_active', 'date_joined',
+            'profile_picture', 'approval_status', 'has_paid',
         ]
+
+    def get_specialty(self, obj):
+        if obj.role == 'technician':
+            try:
+                from authentication.tech_application_model import TechnicianApplication
+                app = TechnicianApplication.objects.filter(user_id=obj.id).first()
+                if app:
+                    if app.service == 'other' and app.custom_service:
+                        return app.custom_service
+                    return app.service or obj.specialty
+            except Exception:
+                pass
+        return obj.specialty
 
 
 # Serializer for email-based login

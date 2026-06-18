@@ -27,6 +27,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('admin', 'Admin'),
     ]
 
+    APPROVAL_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150)  # required for AbstractBaseUser compatibility
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='client')
@@ -35,6 +41,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     cni_number = models.CharField(max_length=50, blank=True, null=True)  # technician only
     availability = models.BooleanField(default=True)  # ✅ new technician field
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)  # ✅ new technician field
+    # ── Technician verification state machine ──────────────────────────────
+    # approval_status: admin reviews the submitted application
+    approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_STATUS_CHOICES,
+        default='pending',
+    )
+    # has_paid: tech completes subscription payment after admin approval
+    has_paid = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -47,5 +62,5 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    def _str_(self):
+    def __str__(self):
         return f"{self.username} ({self.role})"
