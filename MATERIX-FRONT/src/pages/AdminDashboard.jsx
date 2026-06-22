@@ -5,7 +5,7 @@ import {
   Shield, Mail, Clock, Lock, AlertTriangle, DollarSign,
   TrendingUp, TrendingDown, User, ExternalLink, Menu,
   CheckCircle, XCircle, FileText, MapPin, Phone, Briefcase,
-  Calendar, Star, ChevronRight, Filter, Download,
+  Calendar, Star, ChevronRight, Filter, Download, Reply, Archive,
 } from "lucide-react";
 import "../styles/admin-dashboard.css";
 import { useNavigate } from "react-router-dom";
@@ -1986,97 +1986,7 @@ function SettingsTab() {
   );
 }
 
-const INIT_TECHNICIANS = [
-  {
-    id: "TRQ-001", ini: "KM", name: "Kwame Mensah", email: "kwame.mensah@gmail.com",
-    phone: "+237 670 123 456", whatsapp: "+237 670 123 456",
-    dob: "Mar 15, 1990", gender: "Male",
-    city: "Douala", neighborhood: "Bonanjo", address: "Rue de la Paix, Apt 3B",
-    profession: "Electrician", experience: "8 years", availability: "Mon–Sat, 7am–6pm", radius: "20 km",
-    bio: "Certified electrician specializing in residential and commercial wiring, solar panel installations, and generator maintenance. Safety-first approach with 8 years of proven results.",
-    skills: ["Solar Panels", "Wiring", "Generator Repair", "Smart Home"],
-    portfolio: ["commercial-project.pdf", "residential-wiring.jpg"],
-    docs: [
-      { name: "National ID (CNI)", file: "cni_kwame.pdf", verified: true },
-      { name: "Professional Certificate", file: "cert_electrician.pdf", verified: true },
-      { name: "Trade License", file: "license_2024.pdf", verified: false },
-    ],
-    submittedAt: "Mar 16, 2026 · 09:14 AM",
-    status: "pending",
-    rating: null,
-  },
-  {
-    id: "TRQ-002", ini: "FN", name: "Fatima Nkemdirim", email: "fatima.nk@mail.com",
-    phone: "+237 699 234 567", whatsapp: "+237 699 234 567",
-    dob: "Jul 22, 1993", gender: "Female",
-    city: "Yaoundé", neighborhood: "Bastos", address: "Avenue Kennedy, Villa 12",
-    profession: "Plumber", experience: "5 years", availability: "Mon–Fri, 8am–5pm", radius: "15 km",
-    bio: "Experienced plumber with expertise in pipe installations, leak repairs, and bathroom renovations. Fast response times and competitive pricing.",
-    skills: ["Pipe Installation", "Leak Repair", "Bathroom Renovation", "Water Heaters"],
-    portfolio: ["bathroom-reno.jpg", "pipe-install.pdf"],
-    docs: [
-      { name: "National ID (CNI)", file: "cni_fatima.pdf", verified: true },
-      { name: "Professional Certificate", file: "cert_plumbing.pdf", verified: false },
-      { name: "Insurance Certificate", file: "insurance_fatima.pdf", verified: false },
-    ],
-    submittedAt: "Mar 16, 2026 · 11:32 AM",
-    status: "pending",
-    rating: null,
-  },
-  {
-    id: "TRQ-003", ini: "JB", name: "Jean-Baptiste Fokou", email: "jb.fokou@gmail.com",
-    phone: "+237 655 345 678", whatsapp: "+237 655 345 678",
-    dob: "Nov 5, 1988", gender: "Male",
-    city: "Douala", neighborhood: "Akwa", address: "Boulevard de la Liberté 45",
-    profession: "HVAC Technician", experience: "12 years", availability: "Mon–Sun, 7am–8pm", radius: "30 km",
-    bio: "Senior HVAC technician with 12 years handling industrial and residential AC systems, refrigeration units, and ventilation. ISO-certified workshop.",
-    skills: ["AC Installation", "Refrigeration", "Ventilation", "Preventive Maintenance"],
-    portfolio: ["hvac-project.pdf", "workshop-cert.jpg"],
-    docs: [
-      { name: "National ID (CNI)", file: "cni_jb.pdf", verified: true },
-      { name: "HVAC Certification", file: "cert_hvac.pdf", verified: true },
-      { name: "ISO Certificate", file: "iso_cert.pdf", verified: true },
-    ],
-    submittedAt: "Mar 15, 2026 · 03:45 PM",
-    status: "approved",
-    rating: null,
-  },
-  {
-    id: "TRQ-004", ini: "AC", name: "Amina Coulibaly", email: "amina.c@outlook.com",
-    phone: "+237 677 456 789", whatsapp: "+237 677 456 789",
-    dob: "Apr 18, 1995", gender: "Female",
-    city: "Bafoussam", neighborhood: "Tamdja", address: "Quartier Commercial, Bloc C",
-    profession: "Painter & Decorator", experience: "4 years", availability: "Tue–Sun, 8am–6pm", radius: "10 km",
-    bio: "Creative painter and interior decorator with a keen eye for detail. Specializing in residential painting, murals, and modern interior design concepts.",
-    skills: ["Interior Painting", "Murals", "Wallpaper", "Color Consulting"],
-    portfolio: ["living-room.jpg", "mural-project.jpg"],
-    docs: [
-      { name: "National ID (CNI)", file: "cni_amina.pdf", verified: true },
-      { name: "Professional Certificate", file: "cert_painting.pdf", verified: false },
-    ],
-    submittedAt: "Mar 14, 2026 · 10:20 AM",
-    status: "rejected",
-    rating: null,
-  },
-  {
-    id: "TRQ-005", ini: "PO", name: "Pascal Owona", email: "pascal.owona@yahoo.fr",
-    phone: "+237 691 567 890", whatsapp: "+237 691 567 890",
-    dob: "Sep 30, 1985", gender: "Male",
-    city: "Douala", neighborhood: "Bassa", address: "Zone Industrielle, Rue 7",
-    profession: "Welder & Fabricator", experience: "15 years", availability: "Mon–Sat, 6am–7pm", radius: "25 km",
-    bio: "Master welder with 15 years in structural fabrication, gates, railings, and industrial metalwork. TIG, MIG, and arc welding certified.",
-    skills: ["TIG Welding", "MIG Welding", "Structural Fab", "Gates & Railings"],
-    portfolio: ["gate-project.jpg", "structure.pdf"],
-    docs: [
-      { name: "National ID (CNI)", file: "cni_pascal.pdf", verified: true },
-      { name: "Welding Certification", file: "cert_welding.pdf", verified: true },
-      { name: "Safety Training", file: "safety_cert.pdf", verified: false },
-    ],
-    submittedAt: "Mar 17, 2026 · 08:05 AM",
-    status: "pending",
-    rating: null,
-  },
-];
+
 
 function DocRow({ doc, onToggleVerify, onView, onDownload }) {
   return (
@@ -2300,7 +2210,7 @@ function TechnicianDetailModal({ tech, onClose, onApprove, onReject, onToggleVer
   );
 }
 
-function NotificationsTab({ techs, setTechs }) {
+function ApplicationsTab({ techs, setTechs }) {
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -2595,24 +2505,32 @@ const TABS = [
   { key: "users",    label: "Users",     Icon: Users        },
   { key: "products", label: "Products",  Icon: Package      },
   { key: "orders",   label: "Orders",    Icon: ShoppingCart },
+  { key: "application", label: "Application", Icon: FileText },
   { key: "notifications", label: "Notifications", Icon: Bell },
   { key: "settings", label: "Settings",  Icon: Settings     },
 ];
 
 export default function AdminDashboard() {
   const [tab, setTab]               = useState("overview");
-  const [techs, setTechs]           = useState(INIT_TECHNICIANS);
+  const [techs, setTechs]           = useState([]);
   const [techsLoading, setTechsLoading] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
 
   // Get admin name from localStorage — Login.jsx stores as "username" key
   const adminName = localStorage.getItem("username") ?? "Admin";
   const profilePic = localStorage.getItem("profile_picture");
 
-  // Fetch real technician applications from backend when Notifications tab is opened
+  // Admin Notifications States
+  const [localNotifications, setLocalNotifications] = useState([]);
+  const [replyInputs, setReplyInputs] = useState({});
+  const [notifFilter, setNotifFilter] = useState("all");
+
+  const unreadNotifCount = localNotifications.filter(n => n.status === "unread").length;
+
+  // Fetch real technician applications from backend
   useEffect(() => {
-    if (tab !== "notifications") return;
     const token = localStorage.getItem("access");
     if (!token) return;
     setTechsLoading(true);
@@ -2621,7 +2539,7 @@ export default function AdminDashboard() {
     })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
-        // Map API shape → UI shape expected by NotificationsTab
+        // Map API shape → UI shape expected by ApplicationsTab
         const mapped = data.map(t => {
           const app = t.application || {};
           const firstName = app.first_name || "";
@@ -2660,9 +2578,75 @@ export default function AdminDashboard() {
         });
         setTechs(mapped);
       })
-      .catch(() => { /* keep static fallback data */ })
+      .catch(() => {})
       .finally(() => setTechsLoading(false));
   }, [tab]);
+
+  // Fetch real notifications from backend on mount/tab switch
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    fetch("http://127.0.0.1:8000/api/notifications/my/", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(data => {
+        if (data) {
+          const mapped = data.map(n => ({
+            id: n.id,
+            title: n.notif_type === "new_request" ? "New Service Request Submitted" : "System Notification",
+            message: n.message,
+            notif_type: n.notif_type || "general",
+            status: n.is_read ? "read" : "unread",
+            time: new Date(n.created_at).toLocaleDateString(),
+            replyText: "",
+          }));
+          setLocalNotifications(mapped);
+        }
+      })
+      .catch(() => {});
+  }, [tab]);
+
+  const handleNotifMarkRead = (id) => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    fetch("http://127.0.0.1:8000/api/notifications/mark-all-read/", {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` }
+    }).catch(err => console.error(err));
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "read" } : n));
+  };
+
+  const handleNotifDelete = (id) => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    fetch(`http://127.0.0.1:8000/api/notifications/${id}/`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    }).catch(err => console.error(err));
+    setLocalNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleNotifClearAll = () => {
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    fetch("http://127.0.0.1:8000/api/notifications/clear/", {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    }).catch(err => console.error(err));
+    setLocalNotifications([]);
+  };
+
+  const handleNotifReply = (id) => {
+    const text = replyInputs[id];
+    if (!text) return;
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, replyText: text, status: "replied" } : n));
+    setReplyInputs(prev => ({ ...prev, [id]: "" }));
+  };
+
+  const handleNotifArchive = (id) => {
+    setLocalNotifications(prev => prev.map(n => n.id === id ? { ...n, status: "archived" } : n));
+  };
 
   function handleLogout() {
     localStorage.removeItem("access");
@@ -2700,10 +2684,117 @@ export default function AdminDashboard() {
           </div>
 
           <div className="adm-nav-right">
-            <button className="adm-bell-btn">
-              <Bell size={16} />
-              <span className="adm-notif-dot">2</span>
-            </button>
+            <div style={{ position: "relative" }}>
+              <button 
+                className="adm-bell-btn"
+                onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
+                style={{ position: "relative" }}
+              >
+                <Bell size={16} />
+                {unreadNotifCount > 0 && (
+                  <span className="adm-notif-dot">{unreadNotifCount}</span>
+                )}
+              </button>
+              
+              {notifDropdownOpen && (
+                <div 
+                  className="adm-notif-dropdown"
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "100%",
+                    marginTop: "0.5rem",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                    zIndex: 100,
+                    width: "320px",
+                    padding: "1rem",
+                    color: "#1f2937",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", borderBottom: "1px solid #f3f4f6", paddingBottom: "0.5rem" }}>
+                    <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>Notifications</span>
+                    {unreadNotifCount > 0 && (
+                      <span style={{ fontSize: "0.75rem", backgroundColor: "#fef2f2", color: "#ef4444", padding: "2px 6px", borderRadius: "9999px", fontWeight: 600 }}>
+                        {unreadNotifCount} new
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "240px", overflowY: "auto" }} className="adm-custom-scroll">
+                    {localNotifications.filter(n => n.status !== "archived").length === 0 ? (
+                      <div style={{ padding: "1.5rem", textAlign: "center", color: "#9ca3af", fontSize: "0.8125rem" }}>
+                        No notifications
+                      </div>
+                    ) : (
+                      localNotifications
+                        .filter(n => n.status !== "archived")
+                        .slice(0, 5)
+                        .map(n => {
+                          const isUnread = n.status === "unread";
+                          return (
+                            <div 
+                              key={n.id}
+                              onClick={() => {
+                                if (isUnread) handleNotifMarkRead(n.id);
+                                setNotifDropdownOpen(false);
+                                setTab("notifications");
+                              }}
+                              style={{
+                                padding: "0.5rem",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                backgroundColor: isUnread ? "#fef3c7" : "transparent",
+                                borderLeft: isUnread ? "3px solid #f59e0b" : "3px solid transparent",
+                                transition: "background-color 0.15s",
+                                textAlign: "left"
+                              }}
+                              onMouseOver={e => {
+                                if (!isUnread) e.currentTarget.style.backgroundColor = "#f9fafb";
+                              }}
+                              onMouseOut={e => {
+                                if (!isUnread) e.currentTarget.style.backgroundColor = "transparent";
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                                <span style={{ fontWeight: isUnread ? 700 : 500, fontSize: "0.8125rem", color: "#111827", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>
+                                  {n.title}
+                                </span>
+                                <span style={{ fontSize: "0.6875rem", color: "#9ca3af" }}>{n.time}</span>
+                              </div>
+                              <p style={{ fontSize: "0.75rem", color: "#4b5563", margin: "2px 0 0 0", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.3" }}>
+                                {n.message}
+                              </p>
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+                  
+                  <div style={{ marginTop: "0.75rem", borderTop: "1px solid #f3f4f6", paddingTop: "0.5rem", textAlign: "center" }}>
+                    <button 
+                      onClick={() => {
+                        setNotifDropdownOpen(false);
+                        setTab("notifications");
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#FF8C00",
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        width: "100%",
+                      }}
+                    >
+                      View all notifications
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="adm-user-chip" style={{ position: "relative" }}>
               <div 
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)} 
@@ -2811,7 +2902,7 @@ export default function AdminDashboard() {
             >
               <Icon size={14} />
               <span>{label}</span>
-              {key === "notifications" && pendingCount > 0 && (
+              {key === "application" && pendingCount > 0 && (
                 <span
                   style={{
                     backgroundColor: "#FF8C00",
@@ -2826,6 +2917,21 @@ export default function AdminDashboard() {
                   {pendingCount}
                 </span>
               )}
+              {key === "notifications" && unreadNotifCount > 0 && (
+                <span
+                  style={{
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    padding: "1px 6px",
+                    borderRadius: "9999px",
+                    marginLeft: "2px"
+                  }}
+                >
+                  {unreadNotifCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -2837,9 +2943,338 @@ export default function AdminDashboard() {
         {tab === "users"     && <UsersTab />}
         {tab === "products"  && <ProductsTab />}
         {tab === "orders"    && <OrdersTab />}
-        {tab === "notifications" && <NotificationsTab techs={techs} setTechs={setTechs} />}
+        {tab === "application" && <ApplicationsTab techs={techs} setTechs={setTechs} />}
+        {tab === "notifications" && (
+          <AdminNotificationsTab
+            notifications={localNotifications}
+            filter={notifFilter}
+            setFilter={setNotifFilter}
+            replyInputs={replyInputs}
+            setReplyInputs={setReplyInputs}
+            onMarkRead={handleNotifMarkRead}
+            onReply={handleNotifReply}
+            onArchive={handleNotifArchive}
+            onDelete={handleNotifDelete}
+            onClearAll={handleNotifClearAll}
+          />
+        )}
         {tab === "settings"  && <SettingsTab />}
       </main>
+    </div>
+  );
+}
+
+// ─── Admin Notifications Tab ──────────────────────────────────────────────────
+function AdminNotificationsTab({
+  notifications,
+  filter,
+  setFilter,
+  replyInputs,
+  setReplyInputs,
+  onMarkRead,
+  onReply,
+  onArchive,
+  onDelete,
+  onClearAll
+}) {
+  const unreadCount = notifications.filter(n => n.status === "unread").length;
+  
+  const filtered = notifications.filter(n => {
+    if (filter === "all") return n.status !== "archived";
+    return n.status === filter;
+  });
+
+  return (
+    <div className="adm-space-5">
+      <div>
+        <h1 className="adm-section-title" style={{ marginBottom: "1.5rem" }}>Notifications Manager</h1>
+      </div>
+
+      {/* Filters & Actions Bar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {[
+            { key: "all", label: "All" },
+            { key: "unread", label: `Unread${unreadCount > 0 ? `  ${unreadCount}` : ""}` },
+            { key: "read", label: "Read" },
+            { key: "replied", label: "Replied" },
+            { key: "archived", label: "Archived" }
+          ].map(opt => {
+            const isActive = filter === opt.key;
+            return (
+              <button
+                key={opt.key}
+                onClick={() => setFilter(opt.key)}
+                style={{
+                  padding: "6px 16px",
+                  borderRadius: "9999px",
+                  fontSize: "0.8125rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  border: isActive ? "none" : "1px solid #e5e7eb",
+                  backgroundColor: isActive ? "#f59e0b" : "#ffffff",
+                  color: isActive ? "#ffffff" : "#4b5563",
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {notifications.length > 0 && (
+          <button
+            onClick={onClearAll}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 14px",
+              backgroundColor: "#ef4444",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "0.8125rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "background-color 0.15s"
+            }}
+            onMouseOver={e => e.currentTarget.style.backgroundColor = "#dc2626"}
+            onMouseOut={e => e.currentTarget.style.backgroundColor = "#ef4444"}
+          >
+            <Trash2 size={14} /> Clear All
+          </button>
+        )}
+      </div>
+
+      {/* Notifications List */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {filtered.length === 0 ? (
+          <div className="adm-card" style={{ padding: "3rem", textAlign: "center", color: "#9ca3af", fontSize: "0.875rem" }}>
+            No notifications in this category.
+          </div>
+        ) : (
+          filtered.map(n => {
+            const isUnread = n.status === "unread";
+            
+            let badgeBg = "#f3f4f6";
+            let badgeColor = "#4b5563";
+            if (n.status === "unread") { badgeBg = "#ffedd5"; badgeColor = "#ea580c"; }
+            else if (n.status === "read") { badgeBg = "#dcfce7"; badgeColor = "#16a34a"; }
+            else if (n.status === "replied") { badgeBg = "#dbeafe"; badgeColor = "#2563eb"; }
+            else if (n.status === "archived") { badgeBg = "#e5e7eb"; badgeColor = "#4b5563"; }
+
+            return (
+              <div
+                key={n.id}
+                style={{
+                  border: isUnread ? "1px solid #fde68a" : "1px solid #e5e7eb",
+                  borderRadius: "12px",
+                  padding: "1.25rem",
+                  backgroundColor: isUnread ? "#fffbeb" : "#ffffff",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.875rem",
+                  boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+                  transition: "all 0.15s"
+                }}
+              >
+                <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+                  <div
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      backgroundColor: isUnread ? "#fff7ed" : "#f3f4f6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0
+                    }}
+                  >
+                    <Bell size={18} style={{ color: isUnread ? "#f97316" : "#9ca3af" }} />
+                  </div>
+
+                  <div style={{ flexGrow: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+                      <h3 style={{ fontSize: "0.9375rem", fontWeight: 700, color: "#111827", margin: 0 }}>
+                        {n.title}
+                      </h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+                        <span
+                          style={{
+                            fontSize: "0.6875rem",
+                            fontWeight: 700,
+                            padding: "3px 8px",
+                            borderRadius: "9999px",
+                            textTransform: "uppercase",
+                            backgroundColor: badgeBg,
+                            color: badgeColor
+                          }}
+                        >
+                          {n.status}
+                        </span>
+                        <span style={{ fontSize: "0.8125rem", color: "#9ca3af" }}>{n.time}</span>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: "0.875rem", color: "#4b5563", margin: "4px 0 0 0", lineHeight: "1.4" }}>
+                      {n.message}
+                    </p>
+
+                    {n.replyText && (
+                      <div
+                        style={{
+                          marginTop: "0.75rem",
+                          padding: "0.5rem 0.75rem",
+                          backgroundColor: "#f9fafb",
+                          borderRadius: "6px",
+                          fontSize: "0.8125rem",
+                          color: "#374151",
+                          borderLeft: "3px solid #2563eb",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px"
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, color: "#1e3a8a" }}>Your Reply:</span>
+                        <span>{n.replyText}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderTop: "1px solid #f3f4f6", paddingTop: "0.75rem" }}>
+                  <input
+                    type="text"
+                    placeholder="Write a reply..."
+                    value={replyInputs[n.id] || ""}
+                    onChange={e => setReplyInputs(prev => ({ ...prev, [n.id]: e.target.value }))}
+                    style={{
+                      height: "34px",
+                      borderRadius: "9999px",
+                      border: "1px solid #d1d5db",
+                      padding: "0 1rem",
+                      fontSize: "0.8125rem",
+                      color: "#374151",
+                      backgroundColor: "#ffffff",
+                      flexGrow: 1,
+                      outline: "none"
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") onReply(n.id);
+                    }}
+                  />
+
+                  <button
+                    onClick={() => onReply(n.id)}
+                    style={{
+                      height: "34px",
+                      padding: "0 1rem",
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      transition: "background-color 0.15s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#1d4ed8"}
+                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#2563eb"}
+                  >
+                    <Reply size={13} /> Reply
+                  </button>
+
+                  {isUnread && (
+                    <button
+                      onClick={() => onMarkRead(n.id)}
+                      style={{
+                        height: "34px",
+                        padding: "0 0.875rem",
+                        backgroundColor: "transparent",
+                        border: "1px solid #10b981",
+                        color: "#10b981",
+                        borderRadius: "8px",
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        transition: "all 0.15s"
+                      }}
+                      onMouseOver={e => {
+                        e.currentTarget.style.backgroundColor = "#ecfdf5";
+                      }}
+                      onMouseOut={e => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <CheckCircle size={13} /> Read
+                    </button>
+                  )}
+
+                  {n.status !== "archived" && (
+                    <button
+                      onClick={() => onArchive(n.id)}
+                      style={{
+                        height: "34px",
+                        padding: "0 0.875rem",
+                        backgroundColor: "transparent",
+                        border: "1px solid #d1d5db",
+                        color: "#4b5563",
+                        borderRadius: "8px",
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        transition: "all 0.15s"
+                      }}
+                      onMouseOver={e => {
+                        e.currentTarget.style.backgroundColor = "#f9fafb";
+                      }}
+                      onMouseOut={e => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <Archive size={13} /> Archive
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => onDelete(n.id)}
+                    style={{
+                      height: "34px",
+                      width: "34px",
+                      backgroundColor: "#fef2f2",
+                      color: "#ef4444",
+                      border: "none",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "background-color 0.15s"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#fee2e2"}
+                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#fef2f2"}
+                    title="Delete Notification"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

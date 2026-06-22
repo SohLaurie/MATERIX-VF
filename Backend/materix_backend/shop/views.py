@@ -56,6 +56,14 @@ class OrderDetailView(APIView):
         except Exception:
             return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    def delete(self, request, pk):
+        try:
+            order = Order.objects.get(id=pk, customer_id=request.user.id)
+            order.delete()
+            return Response({"success": True, "message": "Order removed from history"}, status=status.HTTP_200_OK)
+        except Exception:
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+
 
 class DeliveryOrderListView(APIView):
     permission_classes = [IsAuthenticated]

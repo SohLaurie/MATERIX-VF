@@ -737,6 +737,7 @@ export default function TechDashboard() {
 
   const [viewRequest, setViewRequest] = useState(null);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const username = localStorage.getItem("username") || "Technician";
@@ -999,10 +1000,113 @@ export default function TechDashboard() {
           <div className="adm-nav-right">
             {/* Notification Bell Icon */}
             <div style={{ position: "relative" }}>
-              <button className="adm-bell-btn" onClick={() => setActiveTab("notifications")}>
+              <button 
+                className="adm-bell-btn" 
+                onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
+                style={{ position: "relative" }}
+              >
                 <Bell size={16} />
                 {unreadCount > 0 && <span className="adm-notif-dot">{unreadCount}</span>}
               </button>
+              
+              {notifDropdownOpen && (
+                <div 
+                  className="adm-notif-dropdown"
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: "100%",
+                    marginTop: "0.5rem",
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                    zIndex: 100,
+                    width: "320px",
+                    padding: "1rem",
+                    color: "#1f2937",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", borderBottom: "1px solid #f3f4f6", paddingBottom: "0.5rem" }}>
+                    <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>Notifications</span>
+                    {unreadCount > 0 && (
+                      <span style={{ fontSize: "0.75rem", backgroundColor: "#fef2f2", color: "#ef4444", padding: "2px 6px", borderRadius: "9999px", fontWeight: 600 }}>
+                        {unreadCount} new
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "240px", overflowY: "auto" }} className="adm-custom-scroll">
+                    {localNotifications.filter(n => n.status !== "archived").length === 0 ? (
+                      <div style={{ padding: "1.5rem", textAlign: "center", color: "#9ca3af", fontSize: "0.8125rem" }}>
+                        No notifications
+                      </div>
+                    ) : (
+                      localNotifications
+                        .filter(n => n.status !== "archived")
+                        .slice(0, 5)
+                        .map(n => {
+                          const isUnread = n.status === "unread";
+                          return (
+                            <div 
+                              key={n.id}
+                              onClick={() => {
+                                if (isUnread) handleLocalMarkRead(n.id);
+                                setNotifDropdownOpen(false);
+                                setActiveTab("notifications");
+                              }}
+                              style={{
+                                padding: "0.5rem",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                                backgroundColor: isUnread ? "#fffbeb" : "transparent",
+                                borderLeft: isUnread ? "3px solid #f59e0b" : "3px solid transparent",
+                                transition: "background-color 0.15s",
+                                textAlign: "left"
+                              }}
+                              onMouseOver={e => {
+                                if (!isUnread) e.currentTarget.style.backgroundColor = "#f9fafb";
+                              }}
+                              onMouseOut={e => {
+                                if (!isUnread) e.currentTarget.style.backgroundColor = "transparent";
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                                <span style={{ fontWeight: isUnread ? 700 : 500, fontSize: "0.8125rem", color: "#111827", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>
+                                  {n.title}
+                                </span>
+                                <span style={{ fontSize: "0.6875rem", color: "#9ca3af" }}>{n.time}</span>
+                              </div>
+                              <p style={{ fontSize: "0.75rem", color: "#4b5563", margin: "2px 0 0 0", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.3" }}>
+                                {n.message}
+                              </p>
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+                  
+                  <div style={{ marginTop: "0.75rem", borderTop: "1px solid #f3f4f6", paddingTop: "0.5rem", textAlign: "center" }}>
+                    <button 
+                      onClick={() => {
+                        setNotifDropdownOpen(false);
+                        setActiveTab("notifications");
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#f59e0b",
+                        fontSize: "0.8125rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        width: "100%",
+                      }}
+                    >
+                      View all notifications
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Profile Dropdown Chip */}

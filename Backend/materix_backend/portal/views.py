@@ -109,11 +109,27 @@ class ServiceRequestDetailView(APIView):
             updated_request = serializer.save()
 
             # Create notification with the new status
-            if updated_request.client_id:
-                Notification.objects.create(
-                    recipient_id=updated_request.client_id,
-                    request_id=str(updated_request.id),
-                    message=f"Your service request '{updated_request.message[:20]}...' has been {updated_request.status} by {user.username}."
-                )
+            recipient_id = updated_request.client_id
+            if not recipient_id:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    lookup_name = updated_request.client_username or updated_request.client_name
+                    if lookup_name:
+                        u = User.objects.filter(username=lookup_name).first()
+                        if u:
+                            recipient_id = u.id
+                except Exception as e:
+                    print(f"Fallback lookup error: {e}")
+
+            if recipient_id:
+                try:
+                    Notification.objects.create(
+                        recipient_id=recipient_id,
+                        request_id=str(updated_request.id),
+                        message=f"Your service request '{updated_request.message[:20]}...' has been {updated_request.status} by {user.username}."
+                    )
+                except Exception as e:
+                    print(f"Failed to create request notification: {e}")
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

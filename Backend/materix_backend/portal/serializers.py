@@ -17,12 +17,17 @@ class TechnicianPublicSerializer(serializers.ModelSerializer):
     hourlyRate = serializers.SerializerMethodField()
     portfolio = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
+    specializations = serializers.SerializerMethodField()
+    radius = serializers.SerializerMethodField()
+    service = serializers.SerializerMethodField()
+    custom_service = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'name', 'specialty', 'location', 'available', 'rating', 'image',
-            'category', 'about', 'experience', 'hourlyRate', 'portfolio', 'reviews'
+            'category', 'about', 'experience', 'hourlyRate', 'portfolio', 'reviews',
+            'specializations', 'radius', 'service', 'custom_service'
         ]
 
     def _get_app(self, obj):
@@ -47,18 +52,18 @@ class TechnicianPublicSerializer(serializers.ModelSerializer):
         return float(obj.rating) if obj.rating else 4.5
 
     def get_image(self, obj):
-        app = self._get_app(obj)
-        if app and app.photo_url:
-            request = self.context.get('request')
-            url = app.photo_url
+        request = self.context.get('request')
+        # Check User profile_picture first (existential image)
+        if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
+            url = obj.profile_picture.url
             if request is not None:
                 return request.build_absolute_uri(url)
             return url
         
-        # Fallback to User profile_picture
-        request = self.context.get('request')
-        if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
-            url = obj.profile_picture.url
+        # Fallback to app.photo_url
+        app = self._get_app(obj)
+        if app and app.photo_url:
+            url = app.photo_url
             if request is not None:
                 return request.build_absolute_uri(url)
             return url
@@ -109,6 +114,31 @@ class TechnicianPublicSerializer(serializers.ModelSerializer):
 
     def get_reviews(self, obj):
         return int(obj.id) * 7 + 12
+
+    def get_specializations(self, obj):
+        app = self._get_app(obj)
+        if app and app.specializations:
+            return app.specializations
+        return obj.specialty or ""
+
+    def get_radius(self, obj):
+        app = self._get_app(obj)
+        if app and app.radius:
+            return app.radius
+        return ""
+
+    def get_service(self, obj):
+        app = self._get_app(obj)
+        if app and app.service:
+            return app.service
+        return obj.specialty or ""
+
+    def get_custom_service(self, obj):
+        app = self._get_app(obj)
+        if app and app.custom_service:
+            return app.custom_service
+        return ""
+
 
 
 class ServiceRequestSerializer(serializers.Serializer):

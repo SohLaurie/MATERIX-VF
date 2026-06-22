@@ -1,12 +1,13 @@
 .register-screen {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
   background: #f2f2f2; 
   margin: 0; 
   font-family: "Poppins", sans-serif;
-  padding: 2rem 2rem;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
 /* Container Layout */
@@ -26,7 +27,8 @@
   font-family: "Poppins", sans-serif; 
   display: flex;
   width: 1320px;
-  height: 880px;
+  min-height: 940px;
+  height: auto;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
@@ -130,30 +132,15 @@
   background: #ffffff;
 }
 
-/* Technician Scrollable Right Section */
+/* Technician Right Section */
 .register-tech-right {
   flex: 1;
   display: flex;
   flex-direction: column;
   background: #f1f5f9;
-  overflow-y: auto;
-  max-height: 100%;
+  overflow-y: visible;
   padding: 2.5rem;
   box-sizing: border-box;
-}
-
-.register-tech-right::-webkit-scrollbar {
-  width: 8px;
-}
-.register-tech-right::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-.register-tech-right::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-.register-tech-right::-webkit-scrollbar-thumb:hover {
-  background: #ff8c00;
 }
 
 .register-form-box {

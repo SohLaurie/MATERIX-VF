@@ -776,7 +776,7 @@ const Register = () => {
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 flex-1 min-h-0">
               {/* Main Content (Columns 1-3) */}
-              <div className="xl:col-span-3 overflow-y-auto pr-2" style={{ maxHeight: "110%" }}>
+              <div className="xl:col-span-3 pr-2">
                 {step === 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     {/* Main form */}
@@ -1414,7 +1414,7 @@ const Register = () => {
               </div>
 
               {/* Sidebar (Column 4) */}
-              <div className="xl:col-span-1 overflow-y-auto" style={{ maxHeight: "100%" }}>
+              <div className="xl:col-span-1">
                 <Sidebar />
               </div>
             </div>
