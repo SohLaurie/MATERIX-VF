@@ -1337,7 +1337,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 .empty-cart {
@@ -1372,18 +1372,20 @@
 }
 
 .cart-items {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
+    padding: 20px 20px 0;
 }
 
 .cart-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+    display: grid;
+    grid-template-areas: 
+        "image details remove"
+        "image controls total";
+    grid-template-columns: 60px 1fr auto;
+    gap: 12px 15px;
     padding: 15px;
     border-radius: 10px;
     margin: 5px 10px;
+    border-bottom: 1px solid #f0f0f0;
     transition: all 0.2s ease;
     position: relative;
 }
@@ -1394,6 +1396,8 @@
 }
 
 .item-image {
+    grid-area: image;
+    align-self: center;
     width: 60px;
     height: 60px;
     background: #f3f4f6;
@@ -1405,7 +1409,7 @@
 }
 
 .item-details {
-    flex: 1;
+    grid-area: details;
 }
 
 .item-details h4 {
@@ -1420,23 +1424,40 @@
     font-size: 0.8rem;
 }
 
+.cart-item .discount-badge {
+    position: static;
+    display: inline-block;
+    margin-top: 4px;
+    background: #ffebee;
+    color: #e53935;
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
 .quantity-controls {
+    grid-area: controls;
     display: flex;
     align-items: center;
     gap: 10px;
     background: #f3f4f6;
     border-radius: 8px;
     padding: 5px;
+    justify-self: start;
 }
 
-
 .item-total {
+    grid-area: total;
     font-weight: 600;
     color: #1f2937;
     font-size: 0.9rem;
+    align-self: center;
+    justify-self: end;
 }
 
 .remove-item {
+    grid-area: remove;
     background: none;
     border: none;
     color: #ef4444;
@@ -1444,6 +1465,8 @@
     padding: 8px;
     border-radius: 6px;
     transition: all 0.3s ease;
+    align-self: center;
+    justify-self: end;
 }
 
 .remove-item:hover {
