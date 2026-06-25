@@ -79,6 +79,7 @@ class Order(mongoengine.Document):
     transaction_id = mongoengine.StringField(max_length=100, blank=True, null=True)
     gps_location = mongoengine.DictField(blank=True, null=True)
     customer_phone = mongoengine.StringField(blank=True, null=True)
+    pickup = mongoengine.StringField(default='—', blank=True, null=True)
 
     items = mongoengine.EmbeddedDocumentListField(OrderItem)
 

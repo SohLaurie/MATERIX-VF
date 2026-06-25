@@ -44,6 +44,7 @@ class TechnicianApplication(mongoengine.Document):
     portfolio_urls = mongoengine.ListField(mongoengine.StringField())
     # Document filenames stored relative to MEDIA_ROOT
     doc_urls     = mongoengine.ListField(mongoengine.StringField())
+    verified_docs = mongoengine.ListField(mongoengine.StringField(), default=list)
 
     # ── Timestamps ───────────────────────────────────────────────────────────
     submitted_at = mongoengine.DateTimeField(default=datetime.datetime.utcnow)

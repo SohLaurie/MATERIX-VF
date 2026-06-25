@@ -73,7 +73,17 @@ class OrderSerializer(serializers.Serializer):
     assigned_agent = serializers.CharField(source="assigned_agent_username", read_only=True)
     gps_location = serializers.DictField(required=False, allow_null=True)
     customer_phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    customer_email = serializers.SerializerMethodField()
+    pickup = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     items = OrderItemSerializer(many=True)
+
+    def get_customer_email(self, obj):
+        try:
+            from authentication.models import User
+            user = User.objects.get(id=obj.customer_id)
+            return user.email
+        except Exception:
+            return ""
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])

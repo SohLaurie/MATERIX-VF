@@ -720,6 +720,7 @@ class AdminTechnicianListView(APIView):
                     "photo_url": app.photo_url,
                     "portfolio_urls": app.portfolio_urls,
                     "doc_urls": app.doc_urls,
+                    "verified_docs": getattr(app, "verified_docs", []) or [],
                     "submitted_at": app.submitted_at.isoformat() if app.submitted_at else None,
                 }
             except Exception:
@@ -814,6 +815,45 @@ class AdminTechnicianRejectView(APIView):
         ).save()
 
         return Response({"detail": "Technician rejected and notified."}, status=status.HTTP_200_OK)
+
+
+class AdminTechnicianVerifyDocView(APIView):
+    """
+    POST /api/auth/admin/technicians/<pk>/verify-doc/
+    Body: {"doc_url": "/media/documents/xxx.pdf", "verified": true/false}
+    Toggles the verification state of a document.
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not _is_admin(request.user):
+            return Response({"error": "Admin access required"}, status=status.HTTP_403_FORBIDDEN)
+        doc_url = request.data.get("doc_url")
+        verified = request.data.get("verified", False)
+        if not doc_url:
+            return Response({"error": "doc_url is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            app = TechnicianApplication.objects.get(user_id=pk)
+            if not hasattr(app, "verified_docs") or app.verified_docs is None:
+                app.verified_docs = []
+            
+            # Normalize doc_url to check both absolute and relative paths
+            target_url = doc_url
+            if target_url.startswith("http://") or target_url.startswith("https://"):
+                from urllib.parse import urlparse
+                target_url = urlparse(target_url).path
+
+            if verified:
+                if target_url not in app.verified_docs:
+                    app.verified_docs.append(target_url)
+            else:
+                if target_url in app.verified_docs:
+                    app.verified_docs.remove(target_url)
+            app.save()
+            return Response({"status": "success", "verified_docs": app.verified_docs})
+        except TechnicianApplication.DoesNotExist:
+            return Response({"error": "Application not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class CompletePaymentView(APIView):

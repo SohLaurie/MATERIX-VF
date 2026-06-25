@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   BarChart2, Users, Package, ShoppingCart, Settings, Bell,
   ChevronDown, Search, Plus, Eye, EyeOff, Pencil, Trash2, X, Globe,
@@ -6,9 +6,20 @@ import {
   TrendingUp, TrendingDown, User, ExternalLink, Menu,
   CheckCircle, XCircle, FileText, MapPin, Phone, Briefcase,
   Calendar, Star, ChevronRight, Filter, Download, Reply, Archive,
+  List, Map,
 } from "lucide-react";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import "../styles/admin-dashboard.css";
 import { useNavigate } from "react-router-dom";
+
+// Fix Leaflet marker icons (Vite/Webpack path issue)
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
@@ -1620,7 +1631,403 @@ function ProductsTab() {
   );
 }
 
+// Colored markers by status for Order Map
+const ORDER_STATUS_COLORS = {
+  "In Progress": "#3b82f6",   // blue
+  "Delivered":   "#22c55e",   // green
+  "Pending":     "#eab308",   // yellow
+};
+
+function makeColoredOrderIcon(color) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.63 14 26 14 26S28 23.63 28 14C28 6.27 21.73 0 14 0z" fill="${color}" stroke="white" stroke-width="2"/>
+    <circle cx="14" cy="14" r="5" fill="white"/>
+  </svg>`;
+  return L.divIcon({
+    html: svg,
+    className: "",
+    iconSize: [28, 40],
+    iconAnchor: [14, 40],
+    popupAnchor: [0, -42],
+  });
+}
+
+function OrderMapView({ orders, onAssignAgent, onViewDetails }) {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
+  const [geocodeCache, setGeocodeCache] = useState({});
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [geocoding, setGeocoding] = useState(false);
+  const [hiddenOrderIds, setHiddenOrderIds] = useState([]);
+
+  const visibleOrders = orders.filter(o => !hiddenOrderIds.includes(o.id ?? o._id));
+
+  // Geocode address
+  const geocodeAddress = async (address) => {
+    if (!address) return null;
+    if (geocodeCache[address]) return geocodeCache[address];
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+      const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+      const data = await res.json();
+      if (data.length > 0) {
+        const coords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        setGeocodeCache(prev => ({ ...prev, [address]: coords }));
+        return coords;
+      }
+    } catch { /* ignore */ }
+    return null;
+  };
+
+  // Init map
+  useEffect(() => {
+    if (mapInstanceRef.current) return;
+    const map = L.map(mapRef.current, { center: [3.848, 11.502], zoom: 12, zoomControl: true });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(map);
+    mapInstanceRef.current = map;
+  }, []);
+
+  // Update markers
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    markersRef.current.forEach(m => map.removeLayer(m));
+    markersRef.current = [];
+
+    const bounds = [];
+
+    (async () => {
+      setGeocoding(true);
+      const groups = {};
+
+      for (const order of visibleOrders) {
+        let coords = null;
+        if (order.gps_location && typeof order.gps_location === 'object' && order.gps_location.lat && order.gps_location.lng) {
+          coords = {
+            lat: parseFloat(order.gps_location.lat),
+            lng: parseFloat(order.gps_location.lng)
+          };
+        } else {
+          const addr = order.customer_address || order.delivery_address;
+          if (addr) {
+            coords = await geocodeAddress(addr);
+          }
+        }
+
+        if (!coords) continue;
+
+        const key = `${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`;
+        if (!groups[key]) {
+          groups[key] = { coords, orders: [] };
+        }
+        groups[key].orders.push(order);
+      }
+
+      for (const [key, group] of Object.entries(groups)) {
+        const { coords, orders: groupOrders } = group;
+        bounds.push([coords.lat, coords.lng]);
+
+        let color = "#6b7280";
+        const statuses = groupOrders.map(o => o.status);
+        if (statuses.includes("Pending")) {
+          color = ORDER_STATUS_COLORS["Pending"];
+        } else if (statuses.includes("In Progress")) {
+          color = ORDER_STATUS_COLORS["In Progress"];
+        } else if (statuses.includes("Delivered")) {
+          color = ORDER_STATUS_COLORS["Delivered"];
+        }
+
+        const marker = L.marker([coords.lat, coords.lng], { icon: makeColoredOrderIcon(color) });
+        marker.on("click", () => {
+          setSelectedGroup({ coords, orders: groupOrders });
+          const map = mapInstanceRef.current;
+          if (map) {
+            const zoom = map.getZoom() || 13;
+            const offset = 0.08 / Math.pow(2, zoom - 10);
+            map.setView([coords.lat + offset, coords.lng], zoom);
+          }
+        });
+        marker.addTo(map);
+        markersRef.current.push(marker);
+      }
+
+      setGeocoding(false);
+      if (bounds.length > 0) {
+        try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 }); } catch { /* ignore */ }
+      }
+    })();
+  }, [visibleOrders]);
+
+  useEffect(() => {
+    setTimeout(() => mapInstanceRef.current?.invalidateSize(), 150);
+  }, []);
+
+  const formattedDate = (d) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const handleSidePanelClick = async (order) => {
+    let lat = null, lng = null;
+    if (order.gps_location && typeof order.gps_location === 'object' && order.gps_location.lat && order.gps_location.lng) {
+      lat = parseFloat(order.gps_location.lat);
+      lng = parseFloat(order.gps_location.lng);
+    }
+
+    if (lat !== null && lng !== null) {
+      const matchKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+      const sameLocationOrders = visibleOrders.filter(o => {
+        if (o.gps_location && typeof o.gps_location === 'object' && o.gps_location.lat && o.gps_location.lng) {
+          const oLat = parseFloat(o.gps_location.lat);
+          const oLng = parseFloat(o.gps_location.lng);
+          return `${oLat.toFixed(5)},${oLng.toFixed(5)}` === matchKey;
+        }
+        return false;
+      });
+
+      setSelectedGroup({
+        coords: { lat, lng },
+        orders: sameLocationOrders.length > 0 ? sameLocationOrders : [order]
+      });
+      const map = mapInstanceRef.current;
+      if (map) {
+        const zoom = map.getZoom() || 13;
+        const offset = 0.08 / Math.pow(2, zoom - 10);
+        map.setView([lat + offset, lng], zoom);
+      }
+    } else {
+      const addr = order.customer_address || order.delivery_address;
+      if (addr) {
+        const coords = await geocodeAddress(addr);
+        if (coords) {
+          setSelectedGroup({ coords, orders: [order] });
+          const map = mapInstanceRef.current;
+          if (map) {
+            const zoom = map.getZoom() || 13;
+            const offset = 0.08 / Math.pow(2, zoom - 10);
+            map.setView([coords.lat + offset, coords.lng], zoom);
+          }
+        }
+      }
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", height: "calc(100vh - 240px)", gap: 0, borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.10)", border: "1px solid #e5e7eb" }}>
+      <div style={{ flex: 1, position: "relative" }}>
+        <div ref={mapRef} style={{ width: "100%", height: "100%", zIndex: 1 }} />
+        {geocoding && (
+          <div style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", background: "white", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 600, color: "#6b7280", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", zIndex: 900 }}>
+            📍 Locating orders...
+          </div>
+        )}
+        <div style={{ position: "absolute", bottom: 16, left: 16, background: "white", borderRadius: 10, padding: "10px 14px", boxShadow: "0 2px 12px rgba(0,0,0,0.13)", zIndex: 900, fontSize: 12 }}>
+          <p style={{ fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", color: "#9ca3af", marginBottom: 6 }}>LEGEND</p>
+          {Object.entries(ORDER_STATUS_COLORS).map(([label, color]) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+              <span style={{ width: 12, height: 12, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />
+              <span style={{ color: "#374151" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {selectedGroup && (
+          <div style={{
+            position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+            background: "white", borderRadius: 20, padding: "20px 24px", width: 330,
+            boxShadow: "0 10px 40px rgba(0,0,0,0.15)", zIndex: 1000,
+            border: "1px solid #f3f4f6",
+            display: "flex", flexDirection: "column"
+          }}>
+            <button 
+              onClick={() => setSelectedGroup(null)} 
+              style={{ 
+                position: "absolute", top: 16, right: 16, 
+                background: "none", border: "none", cursor: "pointer", 
+                color: "#9ca3af", padding: 4, zIndex: 1001 
+              }}
+            >
+              <X size={16} />
+            </button>
+            <div style={{ maxHeight: 380, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20, paddingRight: 4 }}>
+              {selectedGroup.orders.map((ord, idx) => {
+                let badgeBg = "#fffbeb";
+                let badgeColor = "#d97706";
+                let badgeBorder = "#fef3c7";
+                if (ord.status === "In Progress") {
+                  badgeBg = "#eff6ff";
+                  badgeColor = "#1d4ed8";
+                  badgeBorder = "#dbeafe";
+                } else if (ord.status === "Delivered") {
+                  badgeBg = "#ecfdf5";
+                  badgeColor = "#047857";
+                  badgeBorder = "#d1fae5";
+                }
+
+                const price = Number(ord.total_price || ord.total || 0).toLocaleString();
+                const phoneVal = ord.customer_phone || "—";
+                const addrVal = ord.customer_address || ord.delivery_address || "No address";
+                const itemsVal = (ord.items || []).map(i => `${i.product_name ?? i.name} x${i.quantity ?? i.qty}`).join(", ") || "—";
+                const dateVal = formattedDate(ord.created_at);
+                const agentVal = ord.assigned_agent ?? ord.assigned_agent_username ?? "—";
+                const hasAgent = !!(ord.assigned_agent_id || (ord.assigned_agent && ord.assigned_agent !== "—"));
+
+                return (
+                  <div key={ord.id ?? ord._id} style={{
+                    display: "flex", flexDirection: "column", gap: 12,
+                    borderBottom: idx < selectedGroup.orders.length - 1 ? "1px solid #f3f4f6" : "none",
+                    paddingBottom: idx < selectedGroup.orders.length - 1 ? 20 : 0
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#9ca3af", fontWeight: 500 }}>
+                        #{String(ord.id ?? ord._id ?? "").slice(-6).toUpperCase()}
+                      </span>
+                      <span style={{
+                        background: badgeBg, color: badgeColor, border: `1px solid ${badgeBorder}`,
+                        borderRadius: 20, padding: "2px 10px", fontSize: "0.75rem", fontWeight: 600
+                      }}>
+                        {ord.status}
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#111827", margin: "2px 0 0" }}>
+                      {ord.customer_username ?? ord.customer_name ?? ord.customer}
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.82rem", color: "#4b5563" }}>
+                        <Phone size={14} style={{ color: "#9ca3af", flexShrink: 0 }} />
+                        <span>{phoneVal}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.82rem", color: "#4b5563" }}>
+                        <MapPin size={14} style={{ color: "#9ca3af", flexShrink: 0 }} />
+                        <span>{addrVal}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.82rem", color: "#4b5563" }}>
+                        <Package size={14} style={{ color: "#9ca3af", flexShrink: 0 }} />
+                        <span>{itemsVal}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.82rem", color: "#4b5563" }}>
+                        <Calendar size={14} style={{ color: "#9ca3af", flexShrink: 0 }} />
+                        <span>{dateVal}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.82rem", color: "#4b5563" }}>
+                        <User size={14} style={{ color: "#9ca3af", flexShrink: 0 }} />
+                        <span>Agent: {agentVal}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+                      <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#111827" }}>
+                        {price} FCFA
+                      </span>
+                      <div>
+                        {!hasAgent && (
+                          <button
+                            onClick={() => {
+                              onAssignAgent(ord);
+                            }}
+                            style={{
+                              background: "#f59e0b", color: "white", border: "none",
+                              borderRadius: 10, padding: "8px 16px", fontWeight: 700,
+                              fontSize: "0.82rem", cursor: "pointer", boxShadow: "0 2px 4px rgba(245,158,11,0.15)"
+                            }}
+                          >
+                            Assign Agent
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "center", marginTop: 4 }}>
+                      <button
+                        onClick={() => { onViewDetails(ord); setSelectedGroup(null); }}
+                        style={{
+                          background: "none", border: "none", color: "#f59e0b",
+                          fontWeight: 600, fontSize: "0.82rem", cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 4
+                        }}
+                      >
+                        View Full Details →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ width: 280, background: "white", borderLeft: "1px solid #e5e7eb", overflowY: "auto", flexShrink: 0 }}>
+        <div style={{ padding: "16px", borderBottom: "1px solid #f3f4f6" }}>
+          <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "#111827", margin: 0 }}>Orders ({visibleOrders.length})</p>
+        </div>
+        <div style={{ padding: "8px 0" }}>
+          {visibleOrders.map(order => {
+            const color = ORDER_STATUS_COLORS[order.status] || "#6b7280";
+            const isSelected = selectedGroup?.orders?.some(o => (o.id ?? o._id) === (order.id ?? order._id));
+            return (
+              <div
+                key={order.id ?? order._id}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 6,
+                  padding: "10px 16px", background: isSelected ? "#fef3c7" : "transparent",
+                  borderBottom: "1px solid #f3f4f6",
+                  transition: "background 0.15s",
+                }}
+              >
+                <button
+                  onClick={() => handleSidePanelClick(order)}
+                  style={{
+                    flex: 1, display: "flex", alignItems: "center", gap: 10,
+                    background: "none", border: "none", padding: 0,
+                    cursor: "pointer", textAlign: "left", minWidth: 0
+                  }}
+                >
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 600, fontSize: "0.82rem", color: "#111827", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {order.customer_username ?? order.customer_name ?? order.customer}
+                    </p>
+                    <p style={{ fontSize: "0.72rem", color: "#9ca3af", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {order.customer_address || "No address"}
+                    </p>
+                    <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "#374151", margin: "2px 0 0" }}>
+                      {Number(order.total_price || order.total || 0).toLocaleString()} FCFA
+                    </p>
+                  </div>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const orderId = order.id ?? order._id;
+                    setHiddenOrderIds(prev => [...prev, orderId]);
+                    if (selectedGroup) {
+                      const remaining = selectedGroup.orders.filter(o => (o.id ?? o._id) !== orderId);
+                      if (remaining.length === 0) {
+                        setSelectedGroup(null);
+                      } else {
+                        setSelectedGroup({ ...selectedGroup, orders: remaining });
+                      }
+                    }
+                  }}
+                  style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: 14 }}
+                  title="Remove from map view"
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Orders Tab ───────────────────────────────────────────────────────────────
+
 
 function OrdersTab() {
   const [orders, setOrders]           = useState([]);
@@ -1631,6 +2038,17 @@ function OrdersTab() {
   const [openCreate, setOpenCreate]   = useState(false);
   const [saving, setSaving]           = useState(false);
   const [form, setForm] = useState({ customer: "", email: "", agent: "", total: "", status: "Pending", pickup: "" });
+
+  // Delete modal states
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState(null);
+
+  // Edit modal states
+  const [editOpen, setEditOpen] = useState(false);
+  const [orderToEdit, setOrderToEdit] = useState(null);
+  const [editForm, setEditForm] = useState({ id: "", agent: "", total: "", status: "Pending", pickup: "", transaction_id: "" });
+
+  const [viewMode, setViewMode] = useState("list");
 
   const fetchOrders = useCallback(() => {
     setLoading(true);
@@ -1650,13 +2068,44 @@ function OrdersTab() {
     return matchSearch && matchStatus;
   });
 
-  async function deleteOrder(id) {
-    if (!confirm("Delete this order?")) return;
+  async function confirmDeleteOrder() {
+    if (!orderToDelete) return;
+    const id = orderToDelete.id ?? orderToDelete._id;
+    setSaving(true);
     try {
       await apiFetch(`/api/shop/admin/orders/${id}/`, { method: "DELETE" });
       setOrders(prev => prev.filter(o => (o.id ?? o._id) !== id));
+      setDeleteConfirmOpen(false);
+      setOrderToDelete(null);
     } catch {
       alert("Failed to delete order.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitEdit(e) {
+    e.preventDefault();
+    setSaving(true);
+    const id = editForm.id;
+    try {
+      await apiFetch(`/api/shop/admin/orders/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          assigned_agent_id: editForm.agent ? parseInt(editForm.agent) : 0,
+          total_price: parseFloat(editForm.total) || 0,
+          status: editForm.status,
+          pickup: editForm.pickup,
+          transaction_id: editForm.transaction_id,
+        }),
+      });
+      await fetchOrders();
+      setEditOpen(false);
+      setOrderToEdit(null);
+    } catch {
+      alert("Failed to save changes.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -1702,6 +2151,47 @@ function OrdersTab() {
           <p className="adm-section-sub">Track and manage customer orders.</p>
         </div>
         <div className="adm-page-controls">
+          {/* List View / Map View Toggle */}
+          <div style={{ display: "flex", gap: "2px", backgroundColor: "#f3f4f6", padding: "4px", borderRadius: "10px", marginRight: "8px" }}>
+            <button
+              onClick={() => setViewMode("list")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                border: "none",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor: viewMode === "list" ? "#ffffff" : "transparent",
+                color: viewMode === "list" ? "#1f2937" : "#6b7280",
+                boxShadow: viewMode === "list" ? "0 1px 3px rgba(0,0,0,0.1)" : "none"
+              }}
+            >
+              <List size={13} style={{ color: viewMode === "list" ? "#FF8C00" : "#6b7280" }} /> List View
+            </button>
+            <button
+              onClick={() => setViewMode("map")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                border: "none",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                backgroundColor: viewMode === "map" ? "#ffffff" : "transparent",
+                color: viewMode === "map" ? "#1f2937" : "#6b7280",
+                boxShadow: viewMode === "map" ? "0 1px 3px rgba(0,0,0,0.1)" : "none"
+              }}
+            >
+              <Map size={13} style={{ color: viewMode === "map" ? "#FF8C00" : "#6b7280" }} /> Map View
+            </button>
+          </div>
           <div className="adm-search-wrap">
             <span className="adm-search-icon"><Search size={14} /></span>
             <input
@@ -1720,52 +2210,92 @@ function OrdersTab() {
         </div>
       </div>
 
-      <div className="adm-table-wrap">
-        <div className="adm-table-scroll">
-          <table className="adm-table" style={{ minWidth: 740 }}>
-            <thead>
-              <tr>
-                {["Order ID", "Customer", "Agent", "Total", "Status", "Date", "Actions"].map(h => <th key={h}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {loading
-                ? <LoadingRow cols={7} />
-                : filtered.length === 0
-                ? <EmptyRow cols={7} msg="No orders found." />
-                : filtered.map(o => {
-                    const id = o.id ?? o._id;
-                    // OrderSerializer returns "customer_username" for the customer name
-                    const customer = o.customer_username ?? o.customer_name ?? o.customer ?? "—";
-                    const email = o.customer_email ?? o.email ?? "";
-                    const agent = o.assigned_agent ?? o.assigned_agent_username ?? o.agent ?? "—";
-                    const total = Number(o.total_price ?? o.total ?? 0).toFixed(2);
-                    return (
-                      <tr key={id}>
-                        <td className="adm-td-mono">{String(id).slice(0, 10)}</td>
-                        <td>
-                          <div style={{ fontWeight: 600, color: "#111827", fontSize: "0.875rem" }}>{customer}</div>
-                          <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{email}</div>
-                        </td>
-                        <td style={{ fontSize: "0.875rem", color: "#4b5563" }}>{agent}</td>
-                        <td style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>{total} FCFA</td>
-                        <td><span className={orderStatusBadge(o.status)}>{o.status}</span></td>
-                        <td style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{formatDate(o.created_at)}</td>
-                        <td>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <IconBtn icon={<Eye size={13} />} onClick={() => setDetail(o)} />
-                            <IconBtn icon={<Pencil size={13} />} />
-                            <IconBtn icon={<Trash2 size={13} />} danger onClick={() => deleteOrder(id)} />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-              }
-            </tbody>
-          </table>
+      {viewMode === "list" ? (
+        <div className="adm-table-wrap">
+          <div className="adm-table-scroll">
+            <table className="adm-table" style={{ minWidth: 740 }}>
+              <thead>
+                <tr>
+                  {["Order ID", "Customer", "Agent", "Total", "Status", "Date", "Actions"].map(h => <th key={h}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {loading
+                  ? <LoadingRow cols={7} />
+                  : filtered.length === 0
+                  ? <EmptyRow cols={7} msg="No orders found." />
+                  : filtered.map(o => {
+                      const id = o.id ?? o._id;
+                      // OrderSerializer returns "customer_username" for the customer name
+                      const customer = o.customer_username ?? o.customer_name ?? o.customer ?? "—";
+                      const email = o.customer_email ?? o.email ?? "";
+                      const agent = o.assigned_agent ?? o.assigned_agent_username ?? o.agent ?? "—";
+                      const total = Number(o.total_price ?? o.total ?? 0).toFixed(2);
+                      return (
+                        <tr key={id}>
+                          <td className="adm-td-mono">{String(id).slice(0, 10)}</td>
+                          <td>
+                            <div style={{ fontWeight: 600, color: "#111827", fontSize: "0.875rem" }}>{customer}</div>
+                            <div style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{email}</div>
+                          </td>
+                          <td style={{ fontSize: "0.875rem", color: "#4b5563" }}>{agent}</td>
+                          <td style={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>{total} FCFA</td>
+                          <td><span className={orderStatusBadge(o.status)}>{o.status}</span></td>
+                          <td style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{formatDate(o.created_at)}</td>
+                          <td>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <IconBtn icon={<Eye size={13} />} onClick={() => setDetail(o)} />
+                              <IconBtn 
+                                icon={<Pencil size={13} />} 
+                                onClick={() => {
+                                  setOrderToEdit(o);
+                                  setEditForm({
+                                    id: id,
+                                    agent: o.assigned_agent_id || "",
+                                    total: o.total_price ?? o.total ?? "",
+                                    status: o.status || "Pending",
+                                    pickup: o.pickup || "",
+                                    transaction_id: o.transaction_id || "",
+                                  });
+                                  setEditOpen(true);
+                                }} 
+                              />
+                              <IconBtn 
+                                icon={<Trash2 size={13} />} 
+                                danger 
+                                onClick={() => {
+                                  setOrderToDelete(o);
+                                  setDeleteConfirmOpen(true);
+                                }} 
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ) : (
+        <OrderMapView 
+          orders={filtered}
+          onAssignAgent={(order) => {
+            setOrderToEdit(order);
+            setEditForm({
+              id: order.id ?? order._id,
+              agent: order.assigned_agent_id || "",
+              total: order.total_price ?? order.total ?? "",
+              status: order.status || "Pending",
+              pickup: order.pickup || "",
+              transaction_id: order.transaction_id || "",
+            });
+            setEditOpen(true);
+          }}
+          onViewDetails={(order) => setDetail(order)}
+        />
+      )}
 
       {/* Order Detail Modal */}
       <Modal open={!!detail} onClose={() => setDetail(null)}>
@@ -1774,19 +2304,22 @@ function OrdersTab() {
             <ModalHeader title={`Order ${String(detail.id ?? detail._id).slice(0, 10)}`} onClose={() => setDetail(null)} />
             <div>
               {[
-                ["Customer",    detail.customer_username ?? detail.customer_name ?? detail.customer ?? "—"],
-                ["Email",       detail.customer_email ?? detail.email ?? "—"],
-                ["Agent",       detail.assigned_agent_username ?? detail.agent ?? "—"],
-                ["Status",      detail.status ?? "—"],
-                ["Pickup",      detail.pickup ?? "—"],
-                ["Transaction", detail.transaction_id ?? detail.txn ?? "—"],
+                ["Customer",    detail.customer_username ?? detail.customer_name ?? detail.customer],
+                ["Email",       detail.customer_email ?? detail.email],
+                ["Agent",       detail.assigned_agent ?? detail.assigned_agent_username ?? detail.agent],
+                ["Status",      detail.status],
+                ["Pickup",      detail.pickup],
+                ["Transaction", detail.transaction_id ?? detail.txn],
                 ["Total",       `${Number(detail.total_price ?? detail.total ?? 0).toFixed(2)} FCFA`],
-              ].map(([k, v]) => (
-                <div key={k} className="adm-detail-row">
-                  <span className="adm-detail-key">{k}</span>
-                  <span className="adm-detail-val">{v}</span>
-                </div>
-              ))}
+              ].map(([k, v]) => {
+                const displayVal = (v === null || v === undefined || String(v).trim() === "" || String(v) === "None" || String(v) === "—") ? "—" : v;
+                return (
+                  <div key={k} className="adm-detail-row">
+                    <span className="adm-detail-key">{k}</span>
+                    <span className="adm-detail-val">{displayVal}</span>
+                  </div>
+                );
+              })}
             </div>
             {(detail.items ?? []).length > 0 && (
               <div style={{ marginTop: "1.25rem" }}>
@@ -1803,6 +2336,99 @@ function OrdersTab() {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Delete Order Confirmation Modal */}
+      <Modal open={deleteConfirmOpen} onClose={() => { setDeleteConfirmOpen(false); setOrderToDelete(null); }}>
+        <div className="adm-modal-body">
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "1rem" }}>
+            <div style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "9999px",
+              backgroundColor: "#fee2e2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ef4444"
+            }}>
+              <AlertTriangle size={24} />
+            </div>
+            
+            <div className="adm-space-2">
+              <h3 style={{ fontSize: "1.125rem", fontWeight: 700, color: "#111827", margin: 0 }}>
+                Delete Order
+              </h3>
+              <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: 0, padding: "0 10px" }}>
+                Are you sure you want to delete order <strong>{String(orderToDelete?.id ?? orderToDelete?._id).slice(0, 10)}</strong>? This will permanently delete this order.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", width: "100%", gap: "0.75rem", marginTop: "0.5rem" }}>
+              <button 
+                type="button" 
+                className="adm-btn-secondary" 
+                style={{ flex: 1 }} 
+                onClick={() => { setDeleteConfirmOpen(false); setOrderToDelete(null); }}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="adm-btn-primary" 
+                style={{ flex: 1, backgroundColor: "#ef4444" }} 
+                onClick={confirmDeleteOrder}
+                disabled={saving}
+              >
+                {saving ? <span className="adm-spinner" /> : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Order Modal */}
+      <Modal open={editOpen} onClose={() => setEditOpen(false)}>
+        <div className="adm-modal-body">
+          <ModalHeader title="Edit Order" onClose={() => setEditOpen(false)} />
+          <form onSubmit={submitEdit} className="adm-space-4">
+            <div className="adm-grid-2">
+              <FieldInput 
+                label="Assigned Agent ID" 
+                type="number" 
+                value={editForm.agent} 
+                onChange={e => setEditForm(p => ({ ...p, agent: e.target.value }))} 
+              />
+              <FieldInput 
+                label="Total (FCFA)" 
+                required 
+                type="number" 
+                min="0" 
+                step="0.01" 
+                value={editForm.total} 
+                onChange={e => setEditForm(p => ({ ...p, total: e.target.value }))} 
+              />
+              <FieldSelect 
+                label="Status" 
+                value={editForm.status} 
+                onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}
+              >
+                {["Pending", "In Progress", "Delivered", "Cancelled"].map(s => <option key={s}>{s}</option>)}
+              </FieldSelect>
+              <FieldInput 
+                label="Pickup Location" 
+                value={editForm.pickup} 
+                onChange={e => setEditForm(p => ({ ...p, pickup: e.target.value }))} 
+              />
+              <FieldInput 
+                label="Transaction ID" 
+                value={editForm.transaction_id} 
+                onChange={e => setEditForm(p => ({ ...p, transaction_id: e.target.value }))} 
+              />
+            </div>
+            <ModalFooter onCancel={() => setEditOpen(false)} submitLabel="Save Changes" loading={saving} />
+          </form>
+        </div>
       </Modal>
 
       {/* Create Order Modal */}
@@ -2147,7 +2773,7 @@ function DocRow({ doc, onToggleVerify, onView, onDownload }) {
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0" }}>
       <div className="flex items-center gap-2.5" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ width: "24px", height: "24px", borderRadius: "50%", display: "flex", itemsCenter: "center", justifyContent: "center", backgroundColor: doc.verified ? "#d1fae5" : "#f3f4f6" }}>
+        <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ width: "24px", height: "24px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: doc.verified ? "#d1fae5" : "#f3f4f6" }}>
           {doc.verified
             ? <CheckCircle size={13} style={{ color: "#059669" }} />
             : <FileText size={12} style={{ color: "#9ca3af" }} />}
@@ -2157,7 +2783,7 @@ function DocRow({ doc, onToggleVerify, onView, onDownload }) {
           <p style={{ fontSize: "11px", color: "#9ca3af", margin: 0, wordBreak: "break-all" }}>{doc.file}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div className="flex items-center gap-3" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         <span 
           onClick={onToggleVerify}
           style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "9999px", backgroundColor: doc.verified ? "#d1fae5" : "#fef3c7", color: doc.verified ? "#065f46" : "#b45309", cursor: "pointer" }}
@@ -2167,19 +2793,19 @@ function DocRow({ doc, onToggleVerify, onView, onDownload }) {
         </span>
         <button 
           onClick={onView}
-          style={{ border: "none", backgroundColor: "transparent", color: "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: "24px", height: "24px", borderRadius: "4px" }}
-          className="hover:bg-gray-200 transition-colors"
+          style={{ border: "none", backgroundColor: "transparent", color: "#f59e0b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "6px", borderRadius: "6px" }}
+          className="hover:bg-amber-50 transition-colors"
           title="View Document"
         >
-          <Eye size={13} style={{ display: "block" }} />
+          <Eye size={15} />
         </button>
         <button 
           onClick={onDownload}
-          style={{ border: "none", backgroundColor: "transparent", color: "#4b5563", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: "24px", height: "24px", borderRadius: "4px" }}
-          className="hover:bg-gray-200 transition-colors"
+          style={{ border: "none", backgroundColor: "transparent", color: "#f59e0b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "6px", borderRadius: "6px" }}
+          className="hover:bg-amber-50 transition-colors"
           title="Download Document"
         >
-          <Download size={13} style={{ display: "block" }} />
+          <Download size={15} />
         </button>
       </div>
     </div>
@@ -2211,9 +2837,17 @@ function TechnicianDetailModal({ tech, onClose, onApprove, onReject, onToggleVer
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "24px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div style={{ width: "56px", height: "56px", borderRadius: "16px", backgroundColor: "#f59e0b", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "bold" }}>
-              {tech.ini}
-            </div>
+            {tech.profile_picture ? (
+              <img
+                src={getProfileImgUrl(tech.profile_picture)}
+                alt={tech.name}
+                style={{ width: "56px", height: "56px", borderRadius: "16px", objectFit: "cover" }}
+              />
+            ) : (
+              <div style={{ width: "56px", height: "56px", borderRadius: "16px", backgroundColor: "#f59e0b", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: "bold" }}>
+                {tech.ini}
+              </div>
+            )}
             <div>
               <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#111827", margin: 0 }}>{tech.name}</h2>
               <p style={{ fontSize: "14px", color: "#6b7280", margin: "4px 0 0 0" }}>{tech.profession} · {tech.city}</p>
@@ -2289,11 +2923,11 @@ function TechnicianDetailModal({ tech, onClose, onApprove, onReject, onToggleVer
             <section>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
                 <h3 style={{ fontSize: "12px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>Supporting Documents</h3>
-                <span style={{ fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "9999px", backgroundColor: allDocsVerified ? "#d1fae5" : "#fef3c7", color: allDocsVerified ? "#065f46" : "#92400e" }}>
+                <span style={{ fontSize: "10px", marginLeft:"10px", fontWeight: 600, padding: "2px 8px", borderRadius: "9999px", backgroundColor: allDocsVerified ? "#d1fae5" : "#fef3c7", color: allDocsVerified ? "#065f46" : "#92400e" }}>
                   {tech.docs.filter(d => d.verified).length}/{tech.docs.length} verified
                 </span>
               </div>
-              <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "12px" }}>
+              <div style={{ backgroundColor: "#f9fafb", borderRadius: "12px", padding: "12px", width:"fit-content" }}>
                 {tech.docs.map(d => (
                   <DocRow 
                     key={d.name} 
@@ -2303,14 +2937,22 @@ function TechnicianDetailModal({ tech, onClose, onApprove, onReject, onToggleVer
                       const url = d.file.startsWith("http") ? d.file : "http://127.0.0.1:8000" + d.file;
                       window.open(url, "_blank");
                     }}
-                    onDownload={() => {
+                    onDownload={async () => {
                       const url = d.file.startsWith("http") ? d.file : "http://127.0.0.1:8000" + d.file;
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.setAttribute('download', d.name);
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
+                      try {
+                        const res = await fetch(url);
+                        const blob = await res.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = d.name;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(blobUrl);
+                      } catch (err) {
+                        window.open(url, "_blank");
+                      }
                     }}
                   />
                 ))}
@@ -2325,11 +2967,46 @@ function TechnicianDetailModal({ tech, onClose, onApprove, onReject, onToggleVer
                   <div key={f} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", backgroundColor: "#f9fafb", borderRadius: "8px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <FileText size={13} style={{ color: "#9ca3af" }} />
-                      <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500 }}>{f}</span>
+                      <span style={{ fontSize: "12px", color: "#374151", fontWeight: 500, wordBreak: "break-all" }}>{f}</span>
                     </div>
-                    <button style={{ border: "none", backgroundColor: "transparent", color: "#f59e0b", cursor: "pointer" }} className="hover:text-amber-600 transition-colors">
-                      <Download size={13} />
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <button 
+                        onClick={() => {
+                          const url = f.startsWith("http") ? f : "http://127.0.0.1:8000" + f;
+                          window.open(url, "_blank");
+                        }}
+                        style={{ border: "none", backgroundColor: "transparent", color: "#f59e0b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "6px", borderRadius: "6px" }} 
+                        className="hover:bg-amber-50 transition-colors"
+                        title="View File"
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          const url = f.startsWith("http") ? f : "http://127.0.0.1:8000" + f;
+                          const name = f.split("/").pop() || "portfolio-file";
+                          try {
+                            const res = await fetch(url);
+                            const blob = await res.blob();
+                            const blobUrl = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = blobUrl;
+                            link.download = name;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(blobUrl);
+                          } catch {
+                            window.open(url, "_blank");
+                          }
+                        }}
+                        style={{ border: "none", backgroundColor: "transparent", color: "#f59e0b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "6px", borderRadius: "6px" }} 
+                        className="hover:bg-amber-50 transition-colors"
+                        title="Download File"
+                      >
+                        <Download size={15} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2376,15 +3053,41 @@ function ApplicationsTab({ techs, setTechs }) {
     setTimeout(() => setToast(null), 3500);
   }
 
-  function toggleVerifyDoc(techId, docName) {
-    setTechs(prev => prev.map(t => {
-      if (t.id === techId) {
-        const updatedDocs = t.docs.map(d => d.name === docName ? { ...d, verified: !d.verified } : d);
-        setSelected(prevSelected => prevSelected && prevSelected.id === techId ? { ...prevSelected, docs: updatedDocs } : prevSelected);
-        return { ...t, docs: updatedDocs };
+  async function toggleVerifyDoc(techId, docName) {
+    const tech = techs.find(t => t.id === techId);
+    if (!tech) return;
+    const doc = tech.docs.find(d => d.name === docName);
+    if (!doc) return;
+    const newVerifiedState = !doc.verified;
+
+    const token = localStorage.getItem("access");
+    try {
+      const res = await fetch(`http://127.0.0.1:8000/api/auth/admin/technicians/${techId}/verify-doc/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          doc_url: doc.file,
+          verified: newVerifiedState,
+        }),
+      });
+      if (res.ok) {
+        setTechs(prev => prev.map(t => {
+          if (t.id === techId) {
+            const updatedDocs = t.docs.map(d => d.name === docName ? { ...d, verified: newVerifiedState } : d);
+            setSelected(prevSelected => prevSelected && prevSelected.id === techId ? { ...prevSelected, docs: updatedDocs } : prevSelected);
+            return { ...t, docs: updatedDocs };
+          }
+          return t;
+        }));
+      } else {
+        showToast("Failed to update verification state.", "error");
       }
-      return t;
-    }));
+    } catch (e) {
+      showToast("Error updating verification state.", "error");
+    }
   }
 
   async function approve(id) {
@@ -2532,9 +3235,17 @@ function ApplicationsTab({ techs, setTechs }) {
                   {/* Header */}
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "16px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <div style={{ width: "44px", height: "44px", borderRadius: "12px", backgroundColor: "#f59e0b", color: "#ffffff", display: "flex", alignItems: "center", justify: "center", fontWeight: "bold", fontSize: "14px" }}>
-                        {tech.ini}
-                      </div>
+                      {tech.profile_picture ? (
+                        <img
+                          src={getProfileImgUrl(tech.profile_picture)}
+                          alt={tech.name}
+                          style={{ width: "44px", height: "44px", borderRadius: "12px", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div style={{ width: "44px", height: "44px", borderRadius: "12px", backgroundColor: "#f59e0b", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "14px" }}>
+                          {tech.ini}
+                        </div>
+                      )}
                       <div>
                         <h4 style={{ fontSize: "14px", fontWeight: "bold", color: "#111827", margin: 0 }}>{tech.name}</h4>
                         <p style={{ fontSize: "12px", fontWeight: 600, color: "#f59e0b", margin: "2px 0 0 0" }}>{tech.profession}</p>
@@ -2723,12 +3434,13 @@ export default function AdminDashboard() {
             docs:         (app.doc_urls || []).map(url => ({
               name: url.split("/").pop(),
               file: url,
-              verified: false,
+              verified: (app.verified_docs || []).includes(url),
             })),
             submittedAt:  app.submitted_at ? new Date(app.submitted_at).toLocaleString() : t.date_joined,
             status:       t.approval_status,
             has_paid:     t.has_paid,
             rating:       null,
+            profile_picture: t.profile_picture || "",
           };
         });
         setTechs(mapped);
@@ -3419,22 +4131,30 @@ function AdminNotificationsTab({
                     onClick={() => onDelete(n.id)}
                     style={{
                       height: "34px",
-                      width: "34px",
-                      backgroundColor: "#fef2f2",
+                      padding: "0 0.875rem",
+                      backgroundColor: "transparent",
+                      border: "1px solid #fee2e2",
                       color: "#ef4444",
-                      border: "none",
                       borderRadius: "8px",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
                       cursor: "pointer",
-                      display: "flex",
+                      display: "inline-flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      transition: "background-color 0.15s"
+                      gap: "4px",
+                      transition: "all 0.15s"
                     }}
-                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#fee2e2"}
-                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#fef2f2"}
+                    onMouseOver={e => {
+                      e.currentTarget.style.backgroundColor = "#fef2f2";
+                      e.currentTarget.style.borderColor = "#fca5a5";
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.borderColor = "#fee2e2";
+                    }}
                     title="Delete Notification"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={13} /> Delete
                   </button>
                 </div>
               </div>

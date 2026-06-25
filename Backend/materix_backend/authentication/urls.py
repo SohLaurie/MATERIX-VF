@@ -9,6 +9,7 @@ from .views import (
     AdminTechnicianListView,
     AdminTechnicianApproveView,
     AdminTechnicianRejectView,
+    AdminTechnicianVerifyDocView,
     CompletePaymentView,
     Verify2FAView,
     AdminSettingsView,
@@ -36,6 +37,7 @@ urlpatterns = [
     path("admin/technicians/",                         AdminTechnicianListView.as_view(),    name="admin_technicians"),
     path("admin/technicians/<int:pk>/approve/",        AdminTechnicianApproveView.as_view(), name="admin_tech_approve"),
     path("admin/technicians/<int:pk>/reject/",         AdminTechnicianRejectView.as_view(),  name="admin_tech_reject"),
+    path("admin/technicians/<int:pk>/verify-doc/",     AdminTechnicianVerifyDocView.as_view(), name="admin_tech_verify_doc"),
 
     # ── Technician payment completion ─────────────────────────────────────────
     path("complete-payment/",     CompletePaymentView.as_view(),       name="complete_payment"),
