@@ -77,6 +77,8 @@ class Order(mongoengine.Document):
     created_at = mongoengine.DateTimeField(default=datetime.datetime.utcnow)
     updated_at = mongoengine.DateTimeField(default=datetime.datetime.utcnow)
     transaction_id = mongoengine.StringField(max_length=100, blank=True, null=True)
+    gps_location = mongoengine.DictField(blank=True, null=True)
+    customer_phone = mongoengine.StringField(blank=True, null=True)
 
     items = mongoengine.EmbeddedDocumentListField(OrderItem)
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   BarChart2, Users, Package, ShoppingCart, Settings, Bell,
   ChevronDown, Search, Plus, Eye, EyeOff, Pencil, Trash2, X, Globe,
-  Shield, Mail, Clock, Lock, AlertTriangle, DollarSign,
+  Shield, Mail, Clock, Lock, AlertTriangle, DollarSign, CreditCard, UserPlus, LogOut,
   TrendingUp, TrendingDown, User, ExternalLink, Menu,
   CheckCircle, XCircle, FileText, MapPin, Phone, Briefcase,
   Calendar, Star, ChevronRight, Filter, Download, Reply, Archive,
@@ -29,14 +29,54 @@ function authHeader() {
 }
 
 async function apiFetch(path, opts = {}) {
-  const headers = { ...authHeader(), ...opts.headers };
-  if (!(opts.body instanceof FormData)) {
+  const { headers: optHeaders, ...restOpts } = opts;
+  let headers = { ...authHeader(), ...optHeaders };
+  if (opts.body && !(opts.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
-  const res = await fetch(`${BASE}${path}`, {
+  
+  let res = await fetch(`${BASE}${path}`, {
     headers,
-    ...opts,
+    ...restOpts,
   });
+  
+  if (res.status === 401) {
+    const refresh = localStorage.getItem("refresh");
+    if (refresh) {
+      try {
+        const refreshRes = await fetch(`${BASE}/api/auth/token/refresh/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh }),
+        });
+        
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          localStorage.setItem("access", refreshData.access);
+          
+          // Retry with new token
+          headers = { ...headers, Authorization: `Bearer ${refreshData.access}` };
+          res = await fetch(`${BASE}${path}`, {
+            headers,
+            ...restOpts,
+          });
+        } else {
+          localStorage.clear();
+          window.location.href = "/login";
+          throw new Error("Session expired. Please log in again.");
+        }
+      } catch (err) {
+        localStorage.clear();
+        window.location.href = "/login";
+        throw err;
+      }
+    } else {
+      localStorage.clear();
+      window.location.href = "/login";
+      throw new Error("Unauthorized");
+    }
+  }
+  
   if (!res.ok) throw new Error(`${res.status}`);
   if (res.status === 204) return null;
   return res.json();
@@ -576,6 +616,21 @@ function UsersTab() {
     }
   }
 
+  async function toggle2FA(user) {
+    const id = user.id ?? user._id;
+    const nextVal = !user.two_fa_enabled;
+    try {
+      await apiFetch(`/api/auth/admin/users/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ two_fa_enabled: nextVal }),
+        headers: { "Content-Type": "application/json" }
+      });
+      setUsers(prev => prev.map(u => (u.id ?? u._id) === id ? { ...u, two_fa_enabled: nextVal } : u));
+    } catch {
+      alert("Failed to update 2FA status.");
+    }
+  }
+
   const set = key => e => setForm(p => ({ ...p, [key]: e.target.value }));
   const setEdit = key => e => setEditForm(p => ({ ...p, [key]: e.target.value }));
 
@@ -661,7 +716,7 @@ function UsersTab() {
                           </div>
                         </td>
                         <td>
-                          <Toggle on={!!u.two_fa_enabled} onChange={() => {}} />
+                          <Toggle on={!!u.two_fa_enabled} onChange={() => toggle2FA(u)} />
                         </td>
                         <td style={{ fontSize: "0.75rem", color: "#9ca3af" }}>{joined}</td>
                         <td>
@@ -1791,8 +1846,50 @@ function SettingsTab() {
   const [lockDur, setLockDur] = useState("15");
   const [saved,   setSaved]   = useState(false);
   const [showAppPass, setShowAppPass] = useState(false);
+  const [campayUser, setCampayUser] = useState("");
+  const [campayPass, setCampayPass] = useState("");
+  const [campayMode, setCampayMode] = useState("sandbox");
+  const [showCampayPass, setShowCampayPass] = useState(false);
 
-  function save() { setSaved(true); setTimeout(() => setSaved(false), 2500); }
+  useEffect(() => {
+    apiFetch("/api/auth/admin/settings/")
+      .then(data => {
+        setTwoFA(!!data.global_2fa_enabled);
+        if (data.smtp_host) setHost(data.smtp_host);
+        if (data.smtp_port) setPort(data.smtp_port);
+        if (data.smtp_user) setSmtpUser(data.smtp_user);
+        if (data.smtp_pass) setPass(data.smtp_pass);
+        if (data.smtp_from) setFrom(data.smtp_from);
+        if (data.campay_username) setCampayUser(data.campay_username);
+        if (data.campay_password) setCampayPass(data.campay_password);
+        if (data.campay_mode) setCampayMode(data.campay_mode);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function save() {
+    try {
+      await apiFetch("/api/auth/admin/settings/", {
+        method: "POST",
+        body: JSON.stringify({
+          global_2fa_enabled: twoFA,
+          smtp_host: host,
+          smtp_port: port,
+          smtp_user: smtpUser,
+          smtp_pass: pass,
+          smtp_from: from,
+          campay_username: campayUser,
+          campay_password: campayPass,
+          campay_mode: campayMode,
+        }),
+        headers: { "Content-Type": "application/json" }
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      alert("Failed to save settings.");
+    }
+  }
 
   const si = "adm-field-input";
 
@@ -1940,6 +2037,64 @@ function SettingsTab() {
                 <input type="number" min="1" max="1440" value={lockDur} onChange={e => setLockDur(e.target.value)}
                   className={si} style={{ paddingRight: "5rem" }} />
                 <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "#9ca3af", pointerEvents: "none" }}>minutes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CamPay Integration Card */}
+      <div className="adm-card" style={{ width: '120%', padding: "1.5rem" }}>
+        <div className="adm-settings-icon-row">
+          <CreditCard size={17} style={{ color: "#f59e0b" }} />
+          <h2 className="adm-settings-card-title">CamPay Payment Integration</h2>
+        </div>
+        <div className="adm-space-4">
+          <p style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
+            Configure MTN Mobile Money &amp; Orange Money payments using your CamPay credentials.
+          </p>
+          <div className="adm-grid-2-sm">
+            <div>
+              <label className="adm-field-label">CamPay Username</label>
+              <input value={campayUser} onChange={e => setCampayUser(e.target.value)} placeholder="e.g. app_user_xxxxxx" className={si} />
+            </div>
+            <div>
+              <label className="adm-field-label">CamPay Mode</label>
+              <select value={campayMode} onChange={e => setCampayMode(e.target.value)} className={si} style={{ cursor: "pointer" }}>
+                <option value="sandbox">Sandbox (Testing)</option>
+                <option value="live">Live (Production)</option>
+              </select>
+            </div>
+            <div className="adm-col-span-2">
+              <label className="adm-field-label">CamPay App Password / API Key</label>
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <input
+                  type={showCampayPass ? "text" : "password"}
+                  value={campayPass}
+                  onChange={e => setCampayPass(e.target.value)}
+                  placeholder="Enter CamPay API Secret / App Password"
+                  className={si}
+                  style={{ paddingRight: "2.5rem" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCampayPass(!showCampayPass)}
+                  style={{
+                    position: "absolute",
+                    right: "0.75rem",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    color: "#6b7280",
+                  }}
+                  title={showCampayPass ? "Hide Password" : "Show Password"}
+                >
+                  {showCampayPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
           </div>
@@ -2832,10 +2987,14 @@ export default function AdminDashboard() {
                         color: "#d1d5db",
                         cursor: "pointer",
                         fontSize: "0.875rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
                         transition: "background-color 0.15s, color 0.15s"
                       }}
                       className="adm-dropdown-item"
                     >
+                      <User size={14} />
                       Profile
                     </li>
                     <li 
@@ -2848,10 +3007,14 @@ export default function AdminDashboard() {
                         color: "#d1d5db",
                         cursor: "pointer",
                         fontSize: "0.875rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
                         transition: "background-color 0.15s, color 0.15s"
                       }}
                       className="adm-dropdown-item"
                     >
+                      <UserPlus size={14} />
                       Signup
                     </li>
                     <li 
@@ -2864,11 +3027,15 @@ export default function AdminDashboard() {
                         color: "#ef4444",
                         cursor: "pointer",
                         fontSize: "0.875rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
                         borderTop: "1px solid #374151",
                         transition: "background-color 0.15s, color 0.15s"
                       }}
                       className="adm-dropdown-item"
                     >
+                      <LogOut size={14} />
                       Logout
                     </li>
                   </ul>

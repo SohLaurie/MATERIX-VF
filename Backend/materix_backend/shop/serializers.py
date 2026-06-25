@@ -64,18 +64,27 @@ class OrderSerializer(serializers.Serializer):
     id = serializers.CharField(read_only=True)
     customer = serializers.IntegerField(source="customer_id", read_only=True)
     customer_username = serializers.CharField(read_only=True)
-    customer_address = serializers.CharField(read_only=True)
+    customer_address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     status = serializers.CharField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
     transaction_id = serializers.CharField(read_only=True)
     assigned_agent = serializers.CharField(source="assigned_agent_username", read_only=True)
+    gps_location = serializers.DictField(required=False, allow_null=True)
+    customer_phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     items = OrderItemSerializer(many=True)
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
         request = self.context.get("request")
+        
+        cust_addr = validated_data.pop("customer_address", None)
+        if not cust_addr:
+            cust_addr = request.user.address or ""
+            
+        gps_loc = validated_data.pop("gps_location", None)
+        cust_phone = validated_data.pop("customer_phone", None)
         
         embedded_items = []
         for item_data in items_data:
@@ -96,7 +105,9 @@ class OrderSerializer(serializers.Serializer):
         order = Order(
             customer_id=request.user.id,
             customer_username=request.user.username,
-            customer_address=request.user.address or "",
+            customer_address=cust_addr,
+            customer_phone=cust_phone,
+            gps_location=gps_loc,
             items=embedded_items,
             **validated_data
         )

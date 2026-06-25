@@ -10,6 +10,7 @@ const Payment = ({ onClose }) => {
   const [paymentDetails, setPaymentDetails] = useState({ phone: "", name: "", email: "" });
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentCode, setPaymentCode] = useState("");
+  const [processingMessage, setProcessingMessage] = useState("");
 
   const navigate = useNavigate();
 
@@ -22,29 +23,74 @@ const Payment = ({ onClose }) => {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+    if (!paymentDetails.phone) return;
     setIsProcessing(true);
+    setProcessingMessage("Initiating payment request...");
 
-    // Simulate payment processing delay (2s), then call backend to activate account
-    setTimeout(async () => {
-      try {
-        const token = localStorage.getItem("access");
-        if (token) {
-          await fetch("http://127.0.0.1:8000/api/auth/complete-payment/", {
-            method: "POST",
+    try {
+      const token = localStorage.getItem("access");
+      // Call InitiatePaymentView
+      const response = await fetch("http://127.0.0.1:8000/api/auth/payments/initiate/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone_number: paymentDetails.phone,
+          amount: getTotalPrice(),
+          payment_type: "subscription",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Initiation failed");
+      }
+
+      const data = await response.json();
+      const { transaction_id, is_mock } = data;
+      setPaymentCode(transaction_id);
+
+      if (is_mock) {
+        setProcessingMessage("Simulation: Initiated. Simulating phone PIN authorization (takes 4 seconds)...");
+      } else {
+        setProcessingMessage("Payment initiated! Check your phone for MTN Mobile Money or Orange Money prompt and enter your PIN.");
+      }
+
+      // Poll status
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusResponse = await fetch(`http://127.0.0.1:8000/api/auth/payments/status/${transaction_id}/`, {
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
             },
           });
+
+          if (!statusResponse.ok) return;
+          const statusData = await statusResponse.json();
+          
+          if (statusData.status === "success") {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            setProcessingMessage("");
+            setPaymentStep("confirmation");
+          } else if (statusData.status === "failed") {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            setProcessingMessage("");
+            alert("Payment failed. Please verify your mobile money balance or PIN and try again.");
+          }
+        } catch (pollErr) {
+          console.error("Error polling payment status:", pollErr);
         }
-      } catch (_) {
-        // Even if the API call fails, still show confirmation (graceful degradation)
-      } finally {
-        setIsProcessing(false);
-        setPaymentCode("TRX" + Math.floor(Math.random() * 1000000));
-        setPaymentStep("confirmation");
-      }
-    }, 2000);
+      }, 3000);
+
+    } catch (err) {
+      console.error("Payment initiation error:", err);
+      setIsProcessing(false);
+      setProcessingMessage("");
+      alert("An error occurred while initiating your subscription payment. Please try again.");
+    }
   };
 
   const getTotalPrice = () => trialFee;
@@ -155,6 +201,11 @@ const Payment = ({ onClose }) => {
                 <span>Your payment is secure and encrypted</span>
               </div>
 
+              {isProcessing && processingMessage && (
+                <div style={{ margin: "0 0 15px 0", color: "#ff8000", fontSize: "0.875rem", fontWeight: "600", textAlign: "center", backgroundColor: "#fff5eb", padding: "10px", borderRadius: "8px", border: "1px solid #ffe3cb" }}>
+                  {processingMessage}
+                </div>
+              )}
               <div className="payment-actions">
                 <button
                   type="button"

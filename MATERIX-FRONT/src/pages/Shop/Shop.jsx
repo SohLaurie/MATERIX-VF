@@ -96,6 +96,7 @@ const Shop = () => {
   const [wishlist, setWishlist] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentCode, setPaymentCode] = useState("");
+  const [processingMessage, setProcessingMessage] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   // ── Delivery location state ──────────────────────────────────
@@ -248,7 +249,7 @@ const Shop = () => {
 
  
     
-    // ------------------- CREATE ORDER API CALL -------------------
+  // ------------------- CREATE ORDER API CALL -------------------
   const createOrder = async () => {
     try {
       const token = localStorage.getItem("access"); // assumes JWT stored at login
@@ -256,7 +257,7 @@ const Shop = () => {
 
       if (!token) {
         alert("⚠️ You must be logged in to place an order.");
-        return;
+        return null;
       }
 
       const response = await axios.post(
@@ -267,6 +268,9 @@ const Shop = () => {
             quantity: item.quantity,
             price_at_purchase: getDiscountedPrice(item.product.price, item.product.discount), // ✅ discounted price
           })),
+          gps_location: deliveryPin,
+          customer_address: deliveryAddress,
+          customer_phone: paymentDetails.phone,
         },
         {
           headers: {
@@ -278,6 +282,7 @@ const Shop = () => {
 
       console.log("✅ Order created:", response.data);
       await fetchOrders();
+      return response.data;
     } catch (error) {
       console.error("❌ Error creating order:", error.response?.data || error);
       if (error.response?.status === 403) {
@@ -285,54 +290,89 @@ const Shop = () => {
       } else if (error.response?.status === 400) {
         alert("⚠️ Order failed: " + JSON.stringify(error.response.data));
       }
+      return null;
     }
   };
-
-
-
-  const simulatePayment = (amount, method, phoneNumber = "") =>{
-    return new Promise((resolve) => {
-      // Simulate network delay
-      setTimeout(() => {
-        // Generate a fake transaction ID
-        const transactionId = "TXN" + Math.random().toString(36).substr(2, 9).toUpperCase();
-        const newPaymentCode = Math.random().toString(36).substr(2, 6).toUpperCase();
-        setPaymentCode(newPaymentCode);
-        // For demo purposes, we'll always return success
-        resolve({ success: true, transactionId, paymentCode: newPaymentCode, message: "Payment successful" });
-      }, 2000);
-    });
-    };
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     if (!paymentDetails.phone || !paymentDetails.name) return;
     setIsProcessing(true);
+    setProcessingMessage("Initiating payment request...");
+
     try {
-      // Simulate payment processing
-      const result = await simulatePayment(getTotalPrice(), paymentMethod, paymentDetails.phone);
-      setIsProcessing(false);
-      if (result.success) {
-        setPaymentStep("confirmation");
-        // ✅ send order to Django after payment success
-        await createOrder();
-        // Clear cart after showing success message
-        setTimeout(() => {
-          setShowPayment(false);
-          setPaymentStep("method");
-        // Clear payment details
-          setPaymentDetails({ phone: "", email: "", name: "" });
-        // Clear cart items  
-          productsCart.forEach((item) => dispatch(deleteProduct(item.product.id)));
-        }, 2000);
-      }else { 
-        // Show error message 
-            alert(result.error); 
+      // 1. Create order first on backend
+      const order = await createOrder();
+      if (!order || !order.id) {
+        setIsProcessing(false);
+        setProcessingMessage("");
+        return;
+      }
+
+      // 2. Call backend InitiatePaymentView
+      const token = localStorage.getItem("access");
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/auth/payments/initiate/",
+        {
+          phone_number: paymentDetails.phone,
+          amount: getGrandTotal(),
+          payment_type: "order",
+          order_id: order.id
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          }
         }
+      );
+
+      const { transaction_id, campay_reference, is_mock } = response.data;
+      setPaymentCode(transaction_id);
+
+      if (is_mock) {
+        setProcessingMessage("Simulation: Initiated. Simulating phone PIN authorization (takes 4 seconds)...");
+      } else {
+        setProcessingMessage("Payment initiated! Check your phone for MTN Mobile Money or Orange Money prompt and enter your PIN.");
+      }
+
+      // 3. Start status polling
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await axios.get(
+            `http://127.0.0.1:8000/api/auth/payments/status/${transaction_id}/`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            }
+          );
+
+          const payStatus = statusRes.data.status;
+          if (payStatus === "success") {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            setProcessingMessage("");
+            setPaymentStep("confirmation");
+
+            // Clear cart
+            productsCart.forEach((item) => dispatch(deleteProduct(item.product.id)));
+          } else if (payStatus === "failed") {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            setProcessingMessage("");
+            alert("Payment failed. Please verify your mobile money balance or pin and try again.");
+          }
+        } catch (pollErr) {
+          console.error("Error polling payment status:", pollErr);
+        }
+      }, 3000);
+
     } catch (err) {
-      console.error("Payment error:", error);
+      console.error("Payment submission error:", err);
       setIsProcessing(false);
-      alert("An error occurred while processing your payment, please try again.");
+      setProcessingMessage("");
+      alert("An error occurred while initiating the payment. Please try again.");
     }
   };
 
@@ -475,7 +515,12 @@ const Shop = () => {
                     <FaLock className="lock-icon" /> 
                     <span>Your payment is secure and encrypted</span> 
                 </div>
-              <div className="payment-actions"> 
+               {isProcessing && processingMessage && (
+                   <div style={{ margin: "0 0 15px 0", color: "#ff8000", fontSize: "0.875rem", fontWeight: "600", textAlign: "center", backgroundColor: "#fff5eb", padding: "10px", borderRadius: "8px", border: "1px solid #ffe3cb" }}>
+                       {processingMessage}
+                   </div>
+               )}
+               <div className="payment-actions"> 
                 <button type="button" className="back-btn" onClick={() => setPaymentStep("method")} disabled={isProcessing} > Back </button> 
                 <button type="submit" className="pay-now-btn" disabled={ isProcessing || !paymentDetails.phone || !paymentDetails.name } > 
                     {isProcessing ? ( <> 

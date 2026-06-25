@@ -555,3 +555,238 @@
   background-color: #e2e8f0;
   transition: all 0.3s ease;
 }
+
+/* Custom Styles for Step 1 Restyling */
+
+/* Date Input Wrapper */
+.date-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.tech-input-date {
+  position: relative;
+  padding-right: 40px !important;
+}
+
+/* Hide webkit calendar indicator but keep it clickable */
+.tech-input-date::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.date-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+/* Select Wrapper */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.tech-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 40px !important;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+/* Phone and WhatsApp Custom Inputs */
+.phone-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  height: 43px; /* Matches tech-input height */
+}
+
+.phone-input-container:focus-within {
+  border-color: #f97316;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.country-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.country-code {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.dropdown-arrow {
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.phone-input-container .divider {
+  width: 1px;
+  height: 20px;
+  background-color: #cbd5e1;
+  margin: 0 12px;
+}
+
+.phone-input-field {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  height: 100%;
+  font-size: 14px;
+  color: #0f172a;
+  padding: 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.phone-input-field::placeholder {
+  color: #94a3b8;
+}
+
+/* 3D Glowing spheres overrides for technician page */
+.register-tech-container .register-left {
+  background: #0f172a;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-tech-container .circle {
+  position: absolute;
+  border-radius: 50%;
+  animation: float-reg 8s ease-in-out infinite alternate;
+}
+
+.register-tech-container .circle1 {
+  width: 150px;
+  height: 150px;
+  top: 10%;
+  left: -30px;
+  background: radial-gradient(circle at 35% 35%, #ff9e4f 0%, #d95400 45%, #5c1800 80%, #000 100%);
+  filter: drop-shadow(0 0 35px rgba(249, 115, 22, 0.45));
+}
+
+.register-tech-container .circle2 {
+  width: 90px;
+  height: 90px;
+  top: 38%;
+  right: -25px;
+  background: radial-gradient(circle at 35% 35%, #ffa500 0%, #c46200 45%, #522200 80%, #000 100%);
+  filter: drop-shadow(0 0 25px rgba(255, 165, 0, 0.4));
+  animation-delay: -2s;
+}
+
+.register-tech-container .circle3 {
+  width: 240px;
+  height: 240px;
+  bottom: 12%;
+  left: -40px;
+  background: radial-gradient(circle at 35% 35%, #ff3b30 0%, #b80d00 45%, #4a0000 80%, #000 100%);
+  filter: drop-shadow(0 0 45px rgba(239, 68, 68, 0.5));
+  animation-delay: -4s;
+}
+
+.register-tech-container .join-as-text {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #f97316;
+  line-height: 1.2;
+}
+
+.register-tech-container .technician-text {
+  font-size: 3.25rem;
+  font-weight: 800;
+  color: #f97316;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+.register-tech-container .create-account-subtext {
+  font-size: 1.05rem;
+  color: #cbd5e1;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+.register-tech-container .site-link {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.875rem;
+  color: #94a3b8;
+  z-index: 2;
+  font-weight: 500;
+}
+
+/* Profile Photo sidebar card styles */
+.tech-avatar-circle-container {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+}
+
+.tech-avatar-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px dashed #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.tech-avatar-circle:hover {
+  border-color: #f97316;
+  background-color: #fffbeb;
+}
+
+.tech-avatar-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Stepper tweaks */
+.register-tech-container .tech-btn-next {
+  background-color: #f97316;
+}
+.register-tech-container .tech-btn-next:hover:not(:disabled) {
+  background-color: #ea580c;
+}

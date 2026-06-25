@@ -1,36 +1,44 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Login.css";
-import { div } from "framer-motion/client";
 import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
 
+
+  // Common handler to load profile and redirect
+  const handlePostAuth = async (data) => {
+    // Save tokens
+    localStorage.setItem("access", data.access);
+    localStorage.setItem("refresh", data.refresh);
+
+    // Fetch profile to get role
+    const profileRes = await axios.get(
+      "http://127.0.0.1:8000/api/auth/profile/",
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.access}`,
+        },
+      }
+    );
+
+    const profileData = profileRes.data;
+
+    localStorage.setItem("username", profileData.username || profileData.email);
+    localStorage.setItem("role", profileData.role);
+
+    // Fetch profile picture separately
     try {
-      // 1️⃣ Login request
-      const res = await axios.post(
-        "http://127.0.0.1:8000/api/auth/login/",
-        { email, password },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      const data = res.data;
-
-      // 2️⃣ Save tokens
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-
-      // 3️⃣ Fetch profile to get role
-      const profileRes = await axios.get(
-        "http://127.0.0.1:8000/api/auth/profile/",
+      const profilePictureRes = await axios.get(
+        "http://127.0.0.1:8000/api/profile/",
         {
           headers: {
             "Content-Type": "application/json",
@@ -39,57 +47,61 @@ const Login = () => {
         }
       );
 
-      const profileData = profileRes.data;
+      const pictureData = profilePictureRes.data;
 
-      localStorage.setItem("username", profileData.username || profileData.email);
-      localStorage.setItem("role", profileData.role);
-      
+      const profilePicUrl = pictureData.profile_picture.startsWith('http')
+          ? pictureData.profile_picture
+          : `http://127.0.0.1:8000${pictureData.profile_picture}`;
+      localStorage.setItem(
+        "profile_picture",
+        profilePicUrl || ""
+      );
+    } catch (picErr) {
+      console.warn("Profile picture fetch failed:", picErr);
+      localStorage.setItem("profile_picture", ""); // fallback
+    }
 
+    // Redirect based on role
+    switch (profileData.role) {
+      case "client":
+        window.location.href = "/";
+        break;
+      case "technician":
+        window.location.href = "/techdash";
+        break;
+      case "delivery":
+      case "deliveryagent":
+        window.location.href = "/deldash";
+        break;
+      case "admin":
+        window.location.href = "/admindash";
+        break;
+      default:
+        window.location.href = "/#home";
+    }
+  };
 
-      // 4️⃣ Fetch profile picture separately
-      try {
-        const profilePictureRes = await axios.get(
-          "http://127.0.0.1:8000/api/profile/",
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${data.access}`,
-            },
-          }
-        );
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
 
-        const pictureData = profilePictureRes.data;
+    try {
+      // Login request
+      const res = await axios.post(
+        "http://127.0.0.1:8000/api/auth/login/",
+        { email, password },
+        { headers: { "Content-Type": "application/json" } }
+      );
 
-        const profilePicUrl = pictureData.profile_picture.startsWith('http')
-            ? pictureData.profile_picture
-            : `http://127.0.0.1:8000${pictureData.profile_picture}`;
-        localStorage.setItem(
-          "profile_picture",
-          profilePicUrl || ""
-        );
-      } catch (picErr) {
-        console.warn("Profile picture fetch failed:", picErr);
-        localStorage.setItem("profilePicUrl", ""); // fallback
+      const data = res.data;
+
+      // Check if 2FA is required
+      if (data.require_2fa) {
+        navigate("/verify", { state: { email, is2FA: true } });
+        return;
       }
 
-      // ✅ Redirect based on role
-      switch (profileData.role) {
-        case "client":
-          window.location.href = "/";
-          break;
-        case "technician":
-          window.location.href = "/techdash";
-          break;
-        case "delivery":
-        case "deliveryagent":
-          window.location.href = "/deldash";
-          break;
-        case "admin":
-          window.location.href = "/admindash";
-          break;
-        default:
-          window.location.href = "/#home";
-      }
+      await handlePostAuth(data);
     } catch (err) {
       console.error(err);
       if (err.response) {
@@ -100,9 +112,10 @@ const Login = () => {
     }
   };
 
+
   return (
     <div className="bodyscreen"> 
-        <div className="login-container">
+      <div className="login-container">
         <div className="login-left">
           <div className="overlay">
             <h1>Welcome Page</h1>

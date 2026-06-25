@@ -63,30 +63,106 @@ export default function VerifyEmail() {
     e.preventDefault();
   };
 
-  const handleVerify = () => {
+  const is2FA = location.state?.is2FA || false;
+
+  const handleVerify = async () => {
     const entered = code.join("");
     if (entered.length !== 6) return;
     setStatus("verifying");
-    setTimeout(() => {
-      if (entered === MOCK_CODE) {
+
+    if (is2FA) {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/auth/verify-2fa/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, code: entered })
+        });
+        
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.detail || "Invalid code");
+        }
+        
+        const data = await res.json();
+        
+        // Save tokens and user info (same as Login.jsx)
+        localStorage.setItem("access", data.access);
+        localStorage.setItem("refresh", data.refresh);
+        localStorage.setItem("username", data.username);
+        localStorage.setItem("role", data.role);
+        if (data.profile_picture) {
+          localStorage.setItem("profile_picture", data.profile_picture);
+        }
+        
         setStatus("success");
-        setTimeout(() => navigate("/portal"), 2000);
-      } else {
+        
+        // Role-based redirects
+        setTimeout(() => {
+          switch (data.role) {
+            case "technician":
+              window.location.href = "/techdash";
+              break;
+            case "delivery":
+            case "deliveryagent":
+              window.location.href = "/deldash";
+              break;
+            case "admin":
+              window.location.href = "/admindash";
+              break;
+            default:
+              window.location.href = "/#home";
+          }
+        }, 1500);
+        
+      } catch (err) {
         setStatus("error");
         setCode(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       }
-    }, 1200);
+    } else {
+      setTimeout(() => {
+        if (entered === MOCK_CODE) {
+          setStatus("success");
+          setTimeout(() => navigate("/portal"), 2000);
+        } else {
+          setStatus("error");
+          setCode(["", "", "", "", "", ""]);
+          inputRefs.current[0]?.focus();
+        }
+      }, 1200);
+    }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     if (resendCooldown > 0) return;
-    setResendSent(true);
-    setCode(["", "", "", "", "", ""]);
-    setStatus("idle");
-    startCooldown();
-    setTimeout(() => setResendSent(false), 3000);
-    inputRefs.current[0]?.focus();
+    
+    if (is2FA) {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/auth/resend-2fa/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        if (!res.ok) {
+          throw new Error("Failed to resend");
+        }
+        setResendSent(true);
+        setCode(["", "", "", "", "", ""]);
+        setStatus("idle");
+        startCooldown();
+        setTimeout(() => setResendSent(false), 3000);
+        inputRefs.current[0]?.focus();
+      } catch (err) {
+        alert("Failed to resend verification code. Please try again.");
+      }
+    } else {
+      setResendSent(true);
+      setCode(["", "", "", "", "", ""]);
+      setStatus("idle");
+      startCooldown();
+      setTimeout(() => setResendSent(false), 3000);
+      inputRefs.current[0]?.focus();
+    }
   };
 
   const isComplete = code.every(c => c !== "");
@@ -100,15 +176,15 @@ export default function VerifyEmail() {
       }}
     >
       <div className="w-full max-w-[440px]">
-        {/* Back to Registration Link */}
+        {/* Back Link */}
         <button
-          onClick={() => navigate("/register")}
+          onClick={() => navigate(is2FA ? "/login" : "/register")}
           className="flex items-center gap-1.5 mb-4 text-sm font-semibold cursor-pointer transition-colors"
           style={{ color: "#4A5568", background: "none", border: "none" }}
           onMouseEnter={e => (e.currentTarget.style.color = "#FF8000")}
           onMouseLeave={e => (e.currentTarget.style.color = "#4A5568")}
         >
-          <span style={{ fontSize: "1.1rem" }}>←</span> Back to Registration
+          <span style={{ fontSize: "1.1rem" }}>←</span> Back to {is2FA ? "Login" : "Registration"}
         </button>
 
         {/* Card */}
@@ -157,7 +233,10 @@ export default function VerifyEmail() {
                 letterSpacing: "-0.01em"
               }}
             >
-              {status === "success" ? "Email Verified!" : "Enter Verification Code"}
+              {is2FA 
+                ? (status === "success" ? "Verification Successful!" : "Two-Factor Verification") 
+                : (status === "success" ? "Email Verified!" : "Enter Verification Code")
+              }
             </h1>
             
             {status !== "success" && (
@@ -167,7 +246,7 @@ export default function VerifyEmail() {
             )}
             {status === "success" && (
               <p style={{ color: "#10B981", fontSize: "0.875rem", margin: "0", fontWeight: "600" }}>
-                Your account has been verified. Redirecting...
+                {is2FA ? "Taking you to your dashboard..." : "Your account has been verified. Redirecting..."}
               </p>
             )}
           </div>
@@ -219,8 +298,10 @@ export default function VerifyEmail() {
 
                 {/* Expiration Hint */}
                 <p style={{ textAlign: "center", fontSize: "0.75rem", color: "#9CA3AF", margin: "0 0 24px 0" }}>
-                  Code expires in <span style={{ color: "#FF8000", fontWeight: "600" }}>10 minutes</span>
-                  {" "} - Demo code: <span style={{ color: "#4B5563", fontWeight: "700" }}>482916</span>
+                  Code expires in <span style={{ color: "#FF8000", fontWeight: "600" }}>5 minutes</span>
+                  {!is2FA && (
+                    <> - Demo code: <span style={{ color: "#4B5563", fontWeight: "700" }}>482916</span></>
+                  )}
                 </p>
 
                 {/* Validate Button */}
@@ -290,7 +371,9 @@ export default function VerifyEmail() {
                 <div style={{ width: "100%", height: "6px", backgroundColor: "#E5E7EB", borderRadius: "9999px", overflow: "hidden", marginBottom: "16px" }}>
                   <div className="h-full rounded-full animate-pulse" style={{ backgroundColor: "#10B981", width: "100%" }} />
                 </div>
-                <p style={{ color: "#4B5563", fontSize: "0.875rem", margin: "0" }}>Taking you to the portal...</p>
+                <p style={{ color: "#4B5563", fontSize: "0.875rem", margin: "0" }}>
+                  {is2FA ? "Logging in..." : "Taking you to the portal..."}
+                </p>
               </div>
             )}
           </div>

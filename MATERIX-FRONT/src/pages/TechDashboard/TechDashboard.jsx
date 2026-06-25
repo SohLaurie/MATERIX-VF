@@ -4,7 +4,7 @@ import {
   BarChart2, CheckCircle, XCircle, Clock, Bell, ChevronDown, Search,
   Eye, X, Reply, Archive, Trash2, AlertTriangle, Check, User, Menu,
   MapPin, Calendar, Wrench, Inbox, TrendingUp, TrendingDown, ExternalLink,
-  CreditCard
+  CreditCard, UserPlus, LogOut
 } from "lucide-react";
 import "../../styles/admin-dashboard.css";
 
@@ -1147,10 +1147,14 @@ export default function TechDashboard() {
                         color: "#d1d5db",
                         cursor: "pointer",
                         fontSize: "0.875rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
                         transition: "background-color 0.15s, color 0.15s"
                       }}
                       className="adm-dropdown-item"
                     >
+                      <User size={14} />
                       Profile
                     </li>
                     <li 
@@ -1163,10 +1167,14 @@ export default function TechDashboard() {
                         color: "#d1d5db",
                         cursor: "pointer",
                         fontSize: "0.875rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
                         transition: "background-color 0.15s, color 0.15s"
                       }}
                       className="adm-dropdown-item"
                     >
+                      <UserPlus size={14} />
                       Signup
                     </li>
                     <li 
@@ -1179,11 +1187,15 @@ export default function TechDashboard() {
                         color: "#ef4444",
                         cursor: "pointer",
                         fontSize: "0.875rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
                         borderTop: "1px solid #374151",
                         transition: "background-color 0.15s, color 0.15s"
                       }}
                       className="adm-dropdown-item"
                     >
+                      <LogOut size={14} />
                       Logout
                     </li>
                   </ul>

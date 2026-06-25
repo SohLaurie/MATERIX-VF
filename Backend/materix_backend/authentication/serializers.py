@@ -37,7 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'role', 'specialty',
             'address', 'cni_number', 'is_active', 'date_joined',
-            'profile_picture', 'approval_status', 'has_paid',
+            'profile_picture', 'approval_status', 'has_paid', 'two_fa_enabled',
         ]
 
     def get_specialty(self, obj):

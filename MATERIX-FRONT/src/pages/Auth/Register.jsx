@@ -4,7 +4,7 @@ import axios from "axios";
 import { 
   Eye, EyeOff, X, Upload, FileText, CheckCircle, 
   Camera, Check, Phone, Mail, Clock, ChevronDown, 
-  Plus, Image as ImageIcon 
+  Plus, Image as ImageIcon, User, Lightbulb, Shield, Info, Calendar 
 } from "lucide-react";
 import "./Register.css";
 
@@ -34,42 +34,103 @@ const STEPS = [
   { label: "Account & Review", sub: "Create login credentials" },
 ];
 
-function Sidebar() {
+function Sidebar({ step, techForm, photoInputRef, handleProfilePhotoChange, setTechForm }) {
   return (
     <div className="flex flex-col gap-4">
+      {/* Profile Photo */}
+      {step === 0 && (
+        <div className="tech-card" style={{ padding: "20px", marginBottom: 0 }}>
+          <div className="flex items-center gap-2 mb-4">
+            <User size={18} style={{ color: "#f97316" }} />
+            <h3 className="tech-title" style={{ fontSize: "0.9375rem", margin: 0 }}>Profile Photo</h3>
+          </div>
+          
+          <div className="flex flex-col items-center">
+            <div 
+              className="tech-avatar-circle-container animate-none cursor-pointer"
+              onClick={() => photoInputRef.current?.click()}
+              style={{ width: "130px", height: "130px" }}
+            >
+              <div className="tech-avatar-circle" style={{ borderStyle: "dashed" }}>
+                {techForm.photoPreview ? (
+                  <img src={techForm.photoPreview} alt="Profile" className="tech-avatar-preview" />
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5 p-3 text-center">
+                    <Camera size={22} style={{ color: "#94A3B8" }} />
+                    <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#0F172A", margin: 0 }}>Upload Photo</p>
+                    <p style={{ fontSize: "0.6875rem", color: "#94A3B8", margin: 0 }}>JPG, PNG (max 2MB)</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <input 
+              ref={photoInputRef}
+              type="file"
+              style={{ display: "none" }}
+              accept="image/jpg,image/jpeg,image/png"
+              onChange={handleProfilePhotoChange}
+            />
+            
+            {techForm.photoPreview && (
+              <button 
+                type="button"
+                className="mt-3 w-full text-xs font-semibold py-1.5 rounded-lg cursor-pointer transition-colors" 
+                style={{ backgroundColor: "#FEF2F2", color: "#EF4444", border: "none" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTechForm(prev => ({ ...prev, photo: null, photoPreview: null }));
+                }}
+              >
+                Remove Photo
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Quick Tips */}
-      <div className="rounded-2xl p-5" style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-        <h3 style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#0F172A", marginBottom: "0.875rem" }}>Quick Tips</h3>
-        <div className="flex flex-col gap-2.5">
+      <div className="tech-card" style={{ padding: "20px", marginBottom: 0 }}>
+        <div className="flex items-center gap-2 mb-4">
+          <Lightbulb size={18} style={{ color: "#f97316" }} />
+          <h3 className="tech-title" style={{ fontSize: "0.9375rem", margin: 0 }}>Quick Tips</h3>
+        </div>
+        <div className="flex flex-col gap-3">
           {[
-            "Use a clear professional photo",
+            "Use a clear, professional photo",
             "Add accurate information",
             "Upload valid documents",
             "Showcase your best work",
             "Complete all steps for verification",
           ].map((tip, i) => (
             <div key={i} className="flex items-start gap-2.5">
-              <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: "#FFF3E0" }}>
-                <Check size={10} style={{ color: "#FF8C00" }} strokeWidth={3} />
+              <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: "#22c55e" }}>
+                <Check size={9} style={{ color: "white" }} strokeWidth={4} />
               </div>
-              <p style={{ fontSize: "0.8125rem", color: "#475569", lineHeight: 1.5 }}>{tip}</p>
+              <p style={{ fontSize: "0.8125rem", color: "#475569", lineHeight: 1.4, margin: 0 }}>{tip}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Why complete */}
-      <div className="rounded-2xl p-5" style={{ backgroundColor: "#FFF3E0", border: "1px solid rgba(255,140,0,0.2)" }}>
-        <h3 style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#0F172A", marginBottom: "0.5rem" }}>Why complete your profile?</h3>
-        <p style={{ fontSize: "0.8125rem", color: "#78350F", lineHeight: 1.6 }}>
-          Completed profiles get <strong>3× more job requests</strong> and higher client trust.
+      <div className="tech-card" style={{ padding: "20px", marginBottom: 0 }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Shield size={18} style={{ color: "#3b82f6" }} />
+          <h3 className="tech-title" style={{ fontSize: "0.9375rem", margin: 0 }}>Why complete your profile?</h3>
+        </div>
+        <p style={{ fontSize: "0.8125rem", color: "#475569", lineHeight: 1.5, margin: 0 }}>
+          Completed profiles get <strong>3x more job requests</strong> and higher client trust.
         </p>
       </div>
 
       {/* What happens next */}
-      <div className="rounded-2xl p-5" style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-        <h3 style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#0F172A", marginBottom: "0.875rem" }}>What happens next?</h3>
-        <div className="flex flex-col gap-3">
+      <div className="tech-card" style={{ padding: "20px", marginBottom: 0 }}>
+        <div className="flex items-center gap-2 mb-4">
+          <Info size={18} style={{ color: "#0F172A" }} />
+          <h3 className="tech-title" style={{ fontSize: "0.9375rem", margin: 0 }}>What happens next?</h3>
+        </div>
+        <div className="flex flex-col gap-3.5">
           {[
             "Submit your registration",
             "Our team reviews your profile",
@@ -77,28 +138,10 @@ function Sidebar() {
             "Build your reputation and grow",
           ].map((item, i) => (
             <div key={i} className="flex items-start gap-2.5">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: "#0F172A" }}>
-                <span style={{ fontSize: "0.625rem", fontWeight: 800, color: "#FACC15" }}>{i + 1}</span>
+              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#0F172A" }}>
+                <span style={{ fontSize: "0.6875rem", fontWeight: 700, color: "white" }}>{i + 1}</span>
               </div>
-              <p style={{ fontSize: "0.8125rem", color: "#475569", lineHeight: 1.5 }}>{item}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Need Help */}
-      <div className="rounded-2xl p-5" style={{ backgroundColor: "#ffffff", border: "1px solid rgba(15,23,42,0.08)", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-        <h3 style={{ fontWeight: 700, fontSize: "0.9375rem", color: "#0F172A", marginBottom: "0.875rem" }}>Need Help?</h3>
-        <p style={{ fontSize: "0.8125rem", color: "#64748B", marginBottom: "0.75rem" }}>Contact support if you need assistance.</p>
-        <div className="flex flex-col gap-2">
-          {[
-            { icon: <Phone size={13} />, text: "+233 59 123 4567" },
-            { icon: <Mail size={13} />, text: "support@materix.com" },
-            { icon: <Clock size={13} />, text: "Mon–Sat: 8:00 AM – 6:00 PM" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2" style={{ color: "#64748B", fontSize: "0.8125rem" }}>
-              <span style={{ color: "#FF8C00" }}>{item.icon}</span>
-              {item.text}
+              <p style={{ fontSize: "0.8125rem", color: "#475569", lineHeight: 1.4, margin: 0 }}>{item}</p>
             </div>
           ))}
         </div>
@@ -163,6 +206,15 @@ function Stepper({ current }) {
     </div>
   );
 }
+
+const CameroonFlag = () => (
+  <svg width="18" height="12" viewBox="0 0 3 2" style={{ borderRadius: "2px", flexShrink: 0, display: "inline-block" }}>
+    <rect width="1" height="2" fill="#007a5e" />
+    <rect x="1" width="1" height="2" fill="#ce1126" />
+    <rect x="2" width="1" height="2" fill="#fcd116" />
+    <polygon points="1.5,0.78 1.58,1.03 1.8,1.03 1.62,1.18 1.68,1.43 1.5,1.28 1.32,1.43 1.38,1.18 1.2,1.03 1.42,1.03" fill="#fcd116" />
+  </svg>
+);
 
 function Field({ label, required, children }) {
   return (
@@ -743,9 +795,10 @@ const Register = () => {
         {/* Left panel (circles overlay matching login) */}
         <div className="register-left">
           <div className="register-overlay">
-            <h1>Join As Technician</h1>
-            <p>Create Your Account</p>
-            <span className="site-link" style={{ bottom: '-310px' }}>www.materix.com</span>
+            <div className="join-as-text">Join As</div>
+            <div className="technician-text">Technician</div>
+            <p className="create-account-subtext">Create Your Account</p>
+            <span className="site-link" style={{bottom:"-380px"}}>www.materix.com</span>
           </div>
           <div className="circle circle1"></div>
           <div className="circle circle2"></div>
@@ -778,41 +831,46 @@ const Register = () => {
               {/* Main Content (Columns 1-3) */}
               <div className="xl:col-span-3 pr-2">
                 {step === 0 && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    {/* Main form */}
-                    <div className="lg:col-span-2 tech-card">
-                      <h3 className="tech-title">Personal Information</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Field label="First Name" required>
-                          <input
-                            type="text"
-                            className="tech-input"
-                            placeholder="First name"
-                            value={techForm.firstName}
-                            onChange={e => setTechForm(prev => ({ ...prev, firstName: e.target.value }))}
-                            required
-                          />
-                        </Field>
-                        <Field label="Last Name" required>
-                          <input
-                            type="text"
-                            className="tech-input"
-                            placeholder="Last name"
-                            value={techForm.lastName}
-                            onChange={e => setTechForm(prev => ({ ...prev, lastName: e.target.value }))}
-                            required
-                          />
-                        </Field>
-                        <Field label="Date of Birth" required>
+                  <div className="tech-card" style={{ padding: "30px" }}>
+                    <div className="flex items-center gap-2 mb-6">
+                      <User size={20} style={{ color: "#f97316" }} />
+                      <h3 className="tech-title" style={{ margin: 0, fontSize: "1.125rem" }}>Personal Information</h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                      <Field label="First Name" required>
+                        <input
+                          type="text"
+                          className="tech-input"
+                          placeholder="Enter first name"
+                          value={techForm.firstName}
+                          onChange={e => setTechForm(prev => ({ ...prev, firstName: e.target.value }))}
+                          required
+                        />
+                      </Field>
+                      <Field label="Last Name" required>
+                        <input
+                          type="text"
+                          className="tech-input"
+                          placeholder="Enter last name"
+                          value={techForm.lastName}
+                          onChange={e => setTechForm(prev => ({ ...prev, lastName: e.target.value }))}
+                          required
+                        />
+                      </Field>
+                      <Field label="Date of Birth" required>
+                        <div className="date-input-container">
                           <input
                             type="date"
-                            className="tech-input"
+                            className="tech-input tech-input-date"
                             value={techForm.dob}
                             onChange={e => setTechForm(prev => ({ ...prev, dob: e.target.value }))}
                             required
                           />
-                        </Field>
-                        <Field label="Gender" required>
+                          <Calendar size={16} className="date-icon" />
+                        </div>
+                      </Field>
+                      <Field label="Gender" required>
+                        <div className="select-wrapper">
                           <select
                             className="tech-select animate-none"
                             value={techForm.gender}
@@ -824,112 +882,87 @@ const Register = () => {
                             <option value="female">Female</option>
                             <option value="other">Other</option>
                           </select>
-                        </Field>
-                        <Field label="Phone Number" required>
+                          <ChevronDown size={16} className="select-arrow" />
+                        </div>
+                      </Field>
+                      <Field label="Phone Number" required>
+                        <div className="phone-input-container">
+                          <div className="country-select">
+                            <CameroonFlag />
+                            <span className="country-code">+237</span>
+                            <ChevronDown size={12} className="dropdown-arrow" />
+                          </div>
+                          <div className="divider"></div>
                           <input
                             type="tel"
-                            className="tech-input"
-                            placeholder="+237 6XX XXX XXX"
+                            className="phone-input-field"
+                            placeholder="Enter phone number"
                             value={techForm.phone}
                             onChange={e => setTechForm(prev => ({ ...prev, phone: e.target.value }))}
                             required
                           />
-                        </Field>
-                        <Field label="WhatsApp Number">
+                        </div>
+                      </Field>
+                      <Field label="WhatsApp Number">
+                        <div className="phone-input-container">
+                          <div className="country-select">
+                            <CameroonFlag />
+                            <span className="country-code">+237</span>
+                            <ChevronDown size={12} className="dropdown-arrow" />
+                          </div>
+                          <div className="divider"></div>
                           <input
                             type="tel"
-                            className="tech-input"
-                            placeholder="+237 6XX XXX XXX"
+                            className="phone-input-field"
+                            placeholder="Enter WhatsApp number"
                             value={techForm.whatsapp}
                             onChange={e => setTechForm(prev => ({ ...prev, whatsapp: e.target.value }))}
                           />
-                        </Field>
-                        <Field label="Email Address" required>
-                          <input
-                            type="email"
-                            className="tech-input"
-                            placeholder="you@example.com"
-                            value={techForm.email}
-                            onChange={e => setTechForm(prev => ({ ...prev, email: e.target.value }))}
-                            required
-                          />
-                        </Field>
-                        <Field label="City / Location" required>
+                        </div>
+                      </Field>
+                      <Field label="Email Address" required>
+                        <input
+                          type="email"
+                          className="tech-input"
+                          placeholder="Enter email address"
+                          value={techForm.email}
+                          onChange={e => setTechForm(prev => ({ ...prev, email: e.target.value }))}
+                          required
+                        />
+                      </Field>
+                      <Field label="City / Location" required>
+                        <input
+                          type="text"
+                          className="tech-input"
+                          placeholder="Select city"
+                          value={techForm.city}
+                          onChange={e => setTechForm(prev => ({ ...prev, city: e.target.value }))}
+                          required
+                        />
+                      </Field>
+                      <Field label="CNI Number" required>
+                        <input
+                          type="text"
+                          className="tech-input"
+                          placeholder="National ID Card number"
+                          value={techForm.cni}
+                          onChange={e => setTechForm(prev => ({ ...prev, cni: e.target.value }))}
+                          required
+                        />
+                      </Field>
+                      <div>{/* Empty cell to keep Full Address full-width and aligned correctly */}</div>
+                      <div className="sm:col-span-2">
+                        <Field label="Full Address" required>
                           <input
                             type="text"
                             className="tech-input"
-                            placeholder="e.g. Yaoundé"
-                            value={techForm.city}
-                            onChange={e => setTechForm(prev => ({ ...prev, city: e.target.value }))}
+                            placeholder="Street address, district..."
+                            value={techForm.address}
+                            onChange={e => setTechForm(prev => ({ ...prev, address: e.target.value }))}
                             required
                           />
                         </Field>
-                        <Field label="CNI Number" required>
-                          <input
-                            type="text"
-                            className="tech-input"
-                            placeholder="National ID Card number"
-                            value={techForm.cni}
-                            onChange={e => setTechForm(prev => ({ ...prev, cni: e.target.value }))}
-                            required
-                          />
-                        </Field>
-                        <div className="sm:col-span-2">
-                          <Field label="Full Address" required>
-                            <input
-                              type="text"
-                              className="tech-input"
-                              placeholder="Street address, district..."
-                              value={techForm.address}
-                              onChange={e => setTechForm(prev => ({ ...prev, address: e.target.value }))}
-                              required
-                            />
-                          </Field>
-                        </div>
                       </div>
-                    </div>
-                    
-                    {/* Photo Box */}
-                    <div className="tech-card">
-                      <h3 className="tech-title">Profile Photo</h3>
-                      <div 
-                        className="tech-avatar-circle-container animate-none"
-                        onClick={() => photoInputRef.current?.click()}
-                      >
-                        <div className="tech-avatar-circle">
-                          {techForm.photoPreview ? (
-                            <img src={techForm.photoPreview} alt="Profile" className="tech-avatar-preview" />
-                          ) : (
-                            <div className="flex flex-col items-center gap-2 p-4 text-center">
-                              <div className="w-14 h-14 rounded-full flex items-center justify-center animate-none" style={{ backgroundColor: "#FFF3E0" }}>
-                                <Camera size={24} style={{ color: "#FF8C00" }} />
-                              </div>
-                              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#374151", margin: 0 }}>Upload Photo</p>
-                              <p style={{ fontSize: "0.6875rem", color: "#94A3B8", margin: 0 }}>JPG, PNG (max 2MB)</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <input 
-                        ref={photoInputRef}
-                        type="file"
-                        style={{ display: "none" }}
-                        accept="image/jpg,image/jpeg,image/png"
-                        onChange={handleProfilePhotoChange}
-                      />
-                      {techForm.photoPreview && (
-                        <button 
-                          type="button"
-                          className="mt-3 w-full text-xs font-semibold py-1.5 rounded-lg cursor-pointer transition-colors" 
-                          style={{ backgroundColor: "#FEF2F2", color: "#EF4444", border: "none" }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTechForm(prev => ({ ...prev, photo: null, photoPreview: null }));
-                          }}
-                        >
-                          Remove Photo
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}
@@ -1134,6 +1167,9 @@ const Register = () => {
                       <div
                         className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all mb-4"
                         style={{ 
+                          height:"200px",
+                          padding:"2rem",
+                          marginBottom:"1rem",
                           borderColor: dragOverDoc ? "#FF8C00" : "#E2E8F0", 
                           backgroundColor: dragOverDoc ? "#FFF3E0" : "#F8FAFC" 
                         }}
@@ -1152,7 +1188,7 @@ const Register = () => {
                         <button 
                           type="button"
                           className="mt-3 px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer" 
-                          style={{ backgroundColor: "#FF8C00", color: "white", border: "none" }}
+                          style={{ marginTop:"10px", backgroundColor: "#FF8C00", color: "white", border: "none" }}
                           onClick={(e) => {
                             e.stopPropagation();
                             documentInputRef.current?.click();
@@ -1173,9 +1209,9 @@ const Register = () => {
                     />
 
                     {techForm.docs.length > 0 && (
-                      <div className="flex flex-col gap-2 mb-5">
+                      <div className="flex flex-col gap-3 mb-5">
                         {techForm.docs.map(doc => (
-                          <div key={doc.id} className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+                          <div key={doc.id} className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ backgroundColor: "#F0FDF4", border: "1px solid #BBF7D0",boxSizing: "content-box" }}>
                             <FileText size={16} style={{ color: "#22C55E", flexShrink: 0 }} />
                             <span className="flex-1 text-sm truncate" style={{ color: "#166534" }}>{doc.name}</span>
                             <button 
@@ -1192,7 +1228,7 @@ const Register = () => {
                     )}
 
                     {/* Recommended docs card */}
-                    <div className="rounded-xl p-4" style={{ backgroundColor: "#F8FAFC", border: "1px solid rgba(15,23,42,0.08)" }}>
+                    <div className="rounded-xl p-4" style={{ marginTop:"1rem",padding:"2rem",height:"200px", backgroundColor: "#F8FAFC", border: "1px solid rgba(15,23,42,0.08)" }}>
                       <h4 style={{ fontWeight: 700, fontSize: "0.875rem", color: "#0F172A", margin: "0 0 12px 0" }}>Recommended Documents</h4>
                       {[
                         { label: "National Identity Card (CNI)", required: true },
@@ -1413,9 +1449,14 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Sidebar (Column 4) */}
               <div className="xl:col-span-1">
-                <Sidebar />
+                <Sidebar 
+                  step={step} 
+                  techForm={techForm} 
+                  photoInputRef={photoInputRef} 
+                  handleProfilePhotoChange={handleProfilePhotoChange} 
+                  setTechForm={setTechForm} 
+                />
               </div>
             </div>
           )}

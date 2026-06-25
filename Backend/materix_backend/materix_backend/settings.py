@@ -164,3 +164,6 @@ import os
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Default email backend for development fallback
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
