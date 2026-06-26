@@ -648,22 +648,30 @@ function NotificationsTab({
                     onClick={() => onDelete(n.id)}
                     style={{
                       height: "34px",
-                      width: "34px",
-                      backgroundColor: "#fef2f2",
+                      padding: "0 0.875rem",
+                      backgroundColor: "transparent",
+                      border: "1px solid #fee2e2",
                       color: "#ef4444",
-                      border: "none",
                       borderRadius: "8px",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
                       cursor: "pointer",
-                      display: "flex",
+                      display: "inline-flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      transition: "background-color 0.15s"
+                      gap: "4px",
+                      transition: "all 0.15s"
                     }}
-                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#fee2e2"}
-                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#fef2f2"}
+                    onMouseOver={e => {
+                      e.currentTarget.style.backgroundColor = "#fef2f2";
+                      e.currentTarget.style.borderColor = "#fca5a5";
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.borderColor = "#fee2e2";
+                    }}
                     title="Delete Notification"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={13} /> Delete
                   </button>
                 </div>
               </div>
@@ -678,57 +686,9 @@ function NotificationsTab({
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function TechDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [requests, setRequests] = useState([
-    { id: "REQ-001", client: "Sarah Mensah", service: "Electrical Installation", date: "Jun 16, 2026", location: "Downtown", priority: "normal", status: "pending" },
-    { id: "REQ-002", client: "Paul Eze", service: "Wiring Repair", date: "Jun 15, 2026", location: "Westside", priority: "urgent", status: "pending" },
-    { id: "REQ-003", client: "Linda Nkosi", service: "Panel Upgrade", date: "Jun 14, 2026", location: "Northgate", priority: "normal", status: "accepted" },
-    { id: "REQ-004", client: "Kwame Asante", service: "Emergency Fix", date: "Jun 13, 2026", location: "Central", priority: "emergency", status: "rejected" },
-    { id: "REQ-005", client: "Amara Diallo", service: "Generator Setup", date: "Jun 12, 2026", location: "Harbor", priority: "normal", status: "pending" },
-    { id: "REQ-006", client: "Victor Obi", service: "Socket Installation", date: "Jun 11, 2026", location: "Eastview", priority: "normal", status: "accepted" },
-  ]);
+  const [requests, setRequests] = useState([]);
 
-  const [localNotifications, setLocalNotifications] = useState([
-    {
-      id: "N1",
-      title: "New Request from Sarah Mensah",
-      message: "Sarah requested Electrical Installation on Jun 16, 2026.",
-      status: "unread",
-      time: "2h ago",
-      replyText: ""
-    },
-    {
-      id: "N2",
-      title: "New Request from Paul Eze",
-      message: "Paul requested Wiring Repair on Jun 15, 2026.",
-      status: "unread",
-      time: "5h ago",
-      replyText: ""
-    },
-    {
-      id: "N3",
-      title: "Reminder: Pending request REQ-002",
-      message: "You have a pending request awaiting your response.",
-      status: "read",
-      time: "1d ago",
-      replyText: ""
-    },
-    {
-      id: "N4",
-      title: "New Request from Amara Diallo",
-      message: "Amara requested Generator Setup on Jun 12, 2026.",
-      status: "replied",
-      time: "2d ago",
-      replyText: ""
-    },
-    {
-      id: "N5",
-      title: "System: Profile verified",
-      message: "Your technician profile has been verified by Materix.",
-      status: "archived",
-      time: "3d ago",
-      replyText: ""
-    }
-  ]);
+  const [localNotifications, setLocalNotifications] = useState([]);
 
   const [replyInputs, setReplyInputs] = useState({});
   const [notifFilter, setNotifFilter] = useState("all");
@@ -756,21 +716,23 @@ export default function TechDashboard() {
     })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
-        const mapped = data.map(n => ({
-          id: n.id,
-          title: n.notif_type === "payment_required"   ? "Application Approved — Action Required"
-               : n.notif_type === "account_activated"  ? "Account Activated"
-               : n.notif_type === "application_rejected" ? "Application Status Update"
-               : "Notification",
-          message: n.message,
-          notif_type: n.notif_type || "general",
-          status: n.is_read ? "read" : "unread",
-          time: new Date(n.created_at).toLocaleDateString(),
-          replyText: "",
-        }));
-        if (mapped.length > 0) setLocalNotifications(mapped);
+        if (Array.isArray(data)) {
+          const mapped = data.map(n => ({
+            id: n.id,
+            title: n.notif_type === "payment_required"   ? "Application Approved — Action Required"
+                 : n.notif_type === "account_activated"  ? "Account Activated"
+                 : n.notif_type === "application_rejected" ? "Application Status Update"
+                 : "Notification",
+            message: n.message,
+            notif_type: n.notif_type || "general",
+            status: n.is_read ? "read" : "unread",
+            time: new Date(n.created_at).toLocaleDateString(),
+            replyText: "",
+          }));
+          setLocalNotifications(mapped);
+        }
       })
-      .catch(() => {}); // keep static fallback on error
+      .catch(() => {}); // keep empty on error
   }, []);
 
   // Also refresh user profile to get latest approval_status + has_paid
@@ -809,7 +771,7 @@ export default function TechDashboard() {
     })
       .then(r => r.ok ? r.json() : Promise.reject(r))
       .then(data => {
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map(r => {
             const parsed = parseRequestMessage(r.message);
             return {

@@ -1265,22 +1265,30 @@ function NotificationsTab({
                     onClick={() => onDelete(n.id)}
                     style={{
                       height: "34px",
-                      width: "34px",
-                      backgroundColor: "#fef2f2",
+                      padding: "0 0.875rem",
+                      backgroundColor: "transparent",
+                      border: "1px solid #fee2e2",
                       color: "#ef4444",
-                      border: "none",
                       borderRadius: "8px",
+                      fontSize: "0.8125rem",
+                      fontWeight: 600,
                       cursor: "pointer",
-                      display: "flex",
+                      display: "inline-flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      transition: "background-color 0.15s"
+                      gap: "4px",
+                      transition: "all 0.15s"
                     }}
-                    onMouseOver={e => e.currentTarget.style.backgroundColor = "#fee2e2"}
-                    onMouseOut={e => e.currentTarget.style.backgroundColor = "#fef2f2"}
+                    onMouseOver={e => {
+                      e.currentTarget.style.backgroundColor = "#fef2f2";
+                      e.currentTarget.style.borderColor = "#fca5a5";
+                    }}
+                    onMouseOut={e => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.borderColor = "#fee2e2";
+                    }}
                     title="Delete Notification"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={13} /> Delete
                   </button>
                 </div>
               </div>
@@ -1309,48 +1317,7 @@ export default function DeliverDashboard() {
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
 
   // Local static/interactive Notifications state
-  const [localNotifications, setLocalNotifications] = useState([
-    {
-      id: "ORD-101",
-      title: "New Order ORD-101 Assigned",
-      message: "Order ORD-101 from Sarah Chen has been assigned to you.",
-      status: "unread",
-      time: "30m ago",
-      replyText: ""
-    },
-    {
-      id: "ORD-104",
-      title: "New Order ORD-104 Assigned",
-      message: "Order ORD-104 from James Wilson requires delivery today.",
-      status: "unread",
-      time: "1h ago",
-      replyText: ""
-    },
-    {
-      id: "ORD-102",
-      title: "Order ORD-102 In Transit",
-      message: "ORD-102 has been picked up and is now in transit.",
-      status: "read",
-      time: "3h ago",
-      replyText: ""
-    },
-    {
-      id: "ORD-103",
-      title: "Order ORD-103 Delivered",
-      message: "ORD-103 was successfully delivered to Emily Davis.",
-      status: "replied",
-      time: "1d ago",
-      replyText: ""
-    },
-    {
-      id: "route-update",
-      title: "Route Update: Downtown",
-      message: "Traffic delay on Oak Street. Consider alternate route.",
-      status: "archived",
-      time: "2d ago",
-      replyText: ""
-    }
-  ]);
+  const [localNotifications, setLocalNotifications] = useState([]);
   const [notifFilter, setNotifFilter] = useState("all");
   const [replyInputs, setReplyInputs] = useState({});
 
@@ -1389,14 +1356,14 @@ export default function DeliverDashboard() {
         .then(data => {
           const mapped = data.map(n => ({
             id: n.id,
-            title: n.notif_type === "new_request" ? "New Service Request" : "System Notification",
+            title: n.notif_type === "new_request" ? "New Service Request" : (n.notif_type === "order_assigned" ? "New Order Assigned" : "System Notification"),
             message: n.message,
             notif_type: n.notif_type || "general",
             status: n.is_read ? "read" : "unread",
             time: new Date(n.created_at).toLocaleDateString(),
             replyText: "",
           }));
-          if (mapped.length > 0) setLocalNotifications(mapped);
+          setLocalNotifications(mapped);
         })
         .catch(() => {});
     }

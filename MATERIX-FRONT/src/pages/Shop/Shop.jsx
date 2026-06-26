@@ -86,7 +86,7 @@ const Shop = () => {
   const [showCart, setShowCart] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [paymentDetails, setPaymentDetails] = useState({ phone: "", email: "", name: "" });
+  const [paymentDetails, setPaymentDetails] = useState({ phone: "", name: "" });
   const [paymentStep, setPaymentStep] = useState("method");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -271,6 +271,7 @@ const Shop = () => {
           gps_location: deliveryPin,
           customer_address: deliveryAddress,
           customer_phone: paymentDetails.phone,
+          pickup: requestDelivery && deliveryAddress ? deliveryAddress : "—",
         },
         {
           headers: {
@@ -425,137 +426,32 @@ const Shop = () => {
         ? data.display_name.split(",").slice(0, 3).join(", ")
         : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       setDeliveryAddress(addr);
+
+      // Free delivery if location is in Yaoundé
+      const displayName = data.display_name || "";
+      const addressObj = data.address || {};
+      const isYaounde = 
+        displayName.toLowerCase().includes("yaoundé") || 
+        displayName.toLowerCase().includes("yaounde") ||
+        Object.values(addressObj).some(val => 
+          String(val).toLowerCase().includes("yaoundé") || 
+          String(val).toLowerCase().includes("yaounde")
+        );
+
+      if (isYaounde) {
+        setDeliveryFee(0);
+      } else {
+        setDeliveryFee(calcDeliveryFee(dist));
+      }
     } catch {
       setDeliveryAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      setDeliveryFee(calcDeliveryFee(dist));
     } finally {
       setGeocoding(false);
     }
   };
 
   // ------------------- PAYMENT MODAL -------------------
-  const PaymentModal = () => (
-    <div className={`payment-modal-overlay ${showPayment ? "show" : ""}`}>
-      <div className="payment-modal">
-        <button className="close-payment" onClick={() => setShowPayment(false)}><FaTimes /></button>
-        <h2>Complete Your Purchase</h2>
-        {paymentStep === "method"? (
-          <div className="payment-methods">
-            <h3>Select Payment Method</h3>
-            <div className="payment-options">
-              <button className={`payment-option ${paymentMethod === "mtn" ? "selected" : ""}`} onClick={() => setPaymentMethod("mtn")}>
-                <div className="payment-option-content">
-                    <FaCreditCard className="payment-icon"/>
-                    <span>MTN Mobile Money</span>
-                    <div className="payment-desc"> Pay with your MTN Mobile Money account </div>
-                </div> 
-                <div className="payment-fee">No fees</div>
-              </button>
-              <button className={`payment-option ${paymentMethod === "orange" ? "selected" : ""}`} onClick={() => setPaymentMethod("orange")}>
-                <div className="payment-option-content">    
-                    <FaCreditCard className="payment-icon"/>
-                    <span>Orange Money</span> 
-                    <div className="payment-desc"> Pay with your Orange Money account </div>
-                </div>
-                <div className="payment-fee">No fees</div>
-              </button>
-            </div>
-            <div className="payment-total">
-              <span>Total to pay:</span> 
-              <span className="amount">{getGrandTotal().toLocaleString()} FCFA</span>
-            </div>
-            <button className="next-btn" onClick={() => paymentMethod && setPaymentStep("details")}  disabled={!paymentMethod}>
-              Continue to Payment <FaArrowRight />
-            </button>
-          </div>
-        )
-        :( paymentStep === "details" ?(
-          <div className="payment-details">
-            <div className="payment-header">
-                <div className="payment-method-selected"> 
-                    {paymentMethod === "mtn" ? ( 
-                        <FaCreditCard className="payment-icon" /> 
-                    ) : ( 
-                        <FaCreditCard className="payment-icon" /> 
-                    )}
-                    <span> {paymentMethod === "mtn" ? "MTN Mobile Money" : "Orange Money"} </span>
-                </div>
-                <div className="payment-amount"> 
-                    <span>Amount:</span> 
-                    <span className="amount"> {getGrandTotal().toLocaleString()} FCFA </span> 
-                </div>
-            </div>
-            <form className="payment-form" onSubmit={handlePaymentSubmit}>
-                <div className="form-group">
-                    <label>Phone Number</label> 
-                    <div className="input-with-icon"> 
-                        <FaPhoneAlt className="input-icon" /> 
-                        <input type="tel" name="phone" placeholder={`e.g. 6${ paymentMethod === "mtn" ? "7" : "9" }XXXXXXX`} 
-                        value={paymentDetails.phone} onChange={handleInputChange} required /> 
-                    </div>
-                    <div className="input-hint"> Enter your {paymentMethod === "mtn" ? "MTN" : "Orange"} mobile money number </div>
-                </div>
-                <div className="form-group">
-                    <label>Full Name</label> 
-                    <div className="input-with-icon"> 
-                        <FaUser className="input-icon" />
-                        <input type="text" name="name" placeholder="Your full name as on ID" 
-                        value={paymentDetails.name} onChange={handleInputChange} required /> 
-                    </div>
-                </div>
-                <div className="form-group"> 
-                    <label>Email (Optional)</label> 
-                    <div className="input-with-icon"> 
-                        <FaEnvelope className="input-icon" /> 
-                        <input type="email" name="email" placeholder="your.email@example.com" 
-                        value={paymentDetails.email} onChange={handleInputChange} /> 
-                    </div> 
-                    <div className="input-hint"> For order confirmation and receipt </div> 
-                </div>
-                <div className="security-notice"> 
-                    <FaLock className="lock-icon" /> 
-                    <span>Your payment is secure and encrypted</span> 
-                </div>
-               {isProcessing && processingMessage && (
-                   <div style={{ margin: "0 0 15px 0", color: "#ff8000", fontSize: "0.875rem", fontWeight: "600", textAlign: "center", backgroundColor: "#fff5eb", padding: "10px", borderRadius: "8px", border: "1px solid #ffe3cb" }}>
-                       {processingMessage}
-                   </div>
-               )}
-               <div className="payment-actions"> 
-                <button type="button" className="back-btn" onClick={() => setPaymentStep("method")} disabled={isProcessing} > Back </button> 
-                <button type="submit" className="pay-now-btn" disabled={ isProcessing || !paymentDetails.phone || !paymentDetails.name } > 
-                    {isProcessing ? ( <> 
-                    <span className="spinner"></span> Processing... </> 
-                    ) : 
-                    ( `Pay ${getGrandTotal().toLocaleString()} FCFA `)} 
-                </button> 
-               </div>
-                
-              <div className="payment-terms"> By proceeding, you agree to our{" "} 
-                <a href="/terms">Terms of Service</a> and{" "} 
-                <a href="/privacy">Privacy Policy</a>. 
-              </div>
-            </form>
-          </div>
-        ):(
-        <div className="payment-confirmation"> 
-            <div className="success-icon"> 
-                <FaCheckCircle /> 
-            </div> 
-            <h3>Payment Successful!</h3> 
-            <p>Your order has been placed successfully.</p> 
-            {paymentCode && ( 
-                <div className="payment-code"> 
-                <span>Transaction ID:</span> 
-                <strong>{paymentCode}</strong> 
-            </div> 
-            )} 
-            <p className="success-message"> A confirmation has been sent to{" "} {paymentDetails.email || "your phone number"}. Our team will contact you shortly for delivery details. </p> 
-            <button className="continue-shopping-btn" onClick={() => { setShowPayment(false); setPaymentStep("method"); setPaymentDetails({ phone: "", email: "", name: "" }); setPaymentMethod(""); }} > Continue Shopping </button> 
-            </div> 
-            ))}   
-      </div>
-    </div>
-  );
 
   return (
     <div className="enhanced-shop">
@@ -643,8 +539,17 @@ const Shop = () => {
                 </div>
               </div>
               <div className="product-info">
-                <h3 className="product-name">{product.name}</h3>
-                <div className={`wishlist-btn ${wishlist.includes(product.id) ? "active" : ""}`} onClick={() => toggleWishlist(product)}><FaHeart/></div>
+                <div className="product-header">
+                  <h3 className="product-name">{product.name}</h3>
+                  <button 
+                    className={`wishlist-toggle ${wishlist.includes(product.id) ? "active" : ""}`} 
+                    onClick={() => toggleWishlist(product)}
+                    style={{ cursor: "pointer" }}
+                    title="Add to Wishlist"
+                  >
+                    <FaHeart />
+                  </button>
+                </div>
                 <p className="product-description">{product.description}</p>
                 <p className="product-category">{product.category}</p>
                 <div className="product-meta">
@@ -1076,7 +981,156 @@ const Shop = () => {
         )}
 
       {/* --- PAYMENT MODAL --- */}
-      {showPayment && <PaymentModal />}
+      {showPayment && (
+        <PaymentModal
+          showPayment={showPayment}
+          setShowPayment={setShowPayment}
+          paymentStep={paymentStep}
+          setPaymentStep={setPaymentStep}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
+          paymentDetails={paymentDetails}
+          setPaymentDetails={setPaymentDetails}
+          handlePaymentSubmit={handlePaymentSubmit}
+          handleInputChange={handleInputChange}
+          getGrandTotal={getGrandTotal}
+          isProcessing={isProcessing}
+          processingMessage={processingMessage}
+          paymentCode={paymentCode}
+        />
+      )}
+    </div>
+  );
+};
+
+const PaymentModal = ({
+  showPayment,
+  setShowPayment,
+  paymentStep,
+  setPaymentStep,
+  paymentMethod,
+  setPaymentMethod,
+  paymentDetails,
+  setPaymentDetails,
+  handlePaymentSubmit,
+  handleInputChange,
+  getGrandTotal,
+  isProcessing,
+  processingMessage,
+  paymentCode,
+}) => {
+  return (
+    <div className={`payment-modal-overlay ${showPayment ? "show" : ""}`}>
+      <div className="payment-modal">
+        <button className="close-payment" onClick={() => setShowPayment(false)}><FaTimes /></button>
+        <h2>Complete Your Purchase</h2>
+        {paymentStep === "method"? (
+          <div className="payment-methods">
+            <h3>Select Payment Method</h3>
+            <div className="payment-options">
+              <button className={`payment-option ${paymentMethod === "mtn" ? "selected" : ""}`} onClick={() => setPaymentMethod("mtn")}>
+                <div className="payment-option-content">
+                    <FaCreditCard className="payment-icon"/>
+                    <span>MTN Mobile Money</span>
+                    <div className="payment-desc"> Pay with your MTN Mobile Money account </div>
+                </div> 
+                <div className="payment-fee">No fees</div>
+              </button>
+              <button className={`payment-option ${paymentMethod === "orange" ? "selected" : ""}`} onClick={() => setPaymentMethod("orange")}>
+                <div className="payment-option-content">    
+                    <FaCreditCard className="payment-icon"/>
+                    <span>Orange Money</span> 
+                    <div className="payment-desc"> Pay with your Orange Money account </div>
+                </div>
+                <div className="payment-fee">No fees</div>
+              </button>
+            </div>
+            <div className="payment-total">
+              <span>Total to pay:</span> 
+              <span className="amount">{getGrandTotal().toLocaleString()} FCFA</span>
+            </div>
+            <button className="next-btn" onClick={() => paymentMethod && setPaymentStep("details")}  disabled={!paymentMethod}>
+              Continue to Payment <FaArrowRight />
+            </button>
+          </div>
+        )
+        :( paymentStep === "details" ?(
+          <div className="payment-details">
+            <div className="payment-header">
+                <div className="payment-method-selected"> 
+                    {paymentMethod === "mtn" ? ( 
+                        <FaCreditCard className="payment-icon" /> 
+                    ) : ( 
+                        <FaCreditCard className="payment-icon" /> 
+                    )}
+                    <span> {paymentMethod === "mtn" ? "MTN Mobile Money" : "Orange Money"} </span>
+                </div>
+                <div className="payment-amount"> 
+                    <span>Amount:</span> 
+                    <span className="amount"> {getGrandTotal().toLocaleString()} FCFA </span> 
+                </div>
+            </div>
+            <form className="payment-form" onSubmit={handlePaymentSubmit}>
+                <div className="form-group">
+                    <label>Phone Number</label> 
+                    <div className="input-with-icon"> 
+                        <FaPhoneAlt className="input-icon" /> 
+                        <input type="tel" name="phone" placeholder={`e.g. 6${ paymentMethod === "mtn" ? "7" : "9" }XXXXXXX`} 
+                        value={paymentDetails.phone} onChange={handleInputChange} required /> 
+                    </div>
+                    <div className="input-hint"> Enter your {paymentMethod === "mtn" ? "MTN" : "Orange"} mobile money number </div>
+                </div>
+                <div className="form-group">
+                    <label>Full Name</label> 
+                    <div className="input-with-icon"> 
+                        <FaUser className="input-icon" />
+                        <input type="text" name="name" placeholder="Your full name as on ID" 
+                        value={paymentDetails.name} onChange={handleInputChange} required /> 
+                    </div>
+                </div>
+                <div className="security-notice"> 
+                    <FaLock className="lock-icon" /> 
+                    <span>Your payment is secure and encrypted</span> 
+                </div>
+               {isProcessing && processingMessage && (
+                   <div style={{ margin: "0 0 15px 0", color: "#ff8000", fontSize: "0.875rem", fontWeight: "600", textAlign: "center", backgroundColor: "#fff5eb", padding: "10px", borderRadius: "8px", border: "1px solid #ffe3cb" }}>
+                       {processingMessage}
+                   </div>
+               )}
+               <div className="payment-actions"> 
+                <button type="button" className="back-btn" onClick={() => setPaymentStep("method")} disabled={isProcessing} > Back </button> 
+                <button type="submit" className="pay-now-btn" disabled={ isProcessing || !paymentDetails.phone || !paymentDetails.name } > 
+                    {isProcessing ? ( <> 
+                    <span className="spinner"></span> Processing... </> 
+                    ) : 
+                    ( `Pay ${getGrandTotal().toLocaleString()} FCFA `)} 
+                </button> 
+               </div>
+                
+              <div className="payment-terms"> By proceeding, you agree to our{" "} 
+                <a href="/terms">Terms of Service</a> and{" "} 
+                <a href="/privacy">Privacy Policy</a>. 
+              </div>
+            </form>
+          </div>
+        ):(
+        <div className="payment-confirmation"> 
+            <div className="success-icon"> 
+                <FaCheckCircle /> 
+            </div> 
+            <h3>Payment Successful!</h3> 
+            <p>Your order has been placed successfully.</p> 
+            {paymentCode && ( 
+                <div className="payment-code"> 
+                <span>Transaction ID:</span> 
+                <strong>{paymentCode}</strong> 
+            </div> 
+            )} 
+            <p className="success-message"> A confirmation has been sent to your phone number. Our team will contact you shortly for delivery details. </p> 
+            <button className="continue-shopping-btn" onClick={() => { setShowPayment(false); setPaymentStep("method"); setPaymentDetails({ phone: "", name: "" }); setPaymentMethod(""); }} > Continue Shopping </button> 
+            </div> 
+            ))}   
+      </div>
     </div>
   );
 };

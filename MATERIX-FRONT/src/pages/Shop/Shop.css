@@ -117,6 +117,7 @@
     width: 300px;
     font-size: 14px;
     transition: all 0.3s ease;
+    color:white;
 }
 
 .search-input:focus {
@@ -1215,6 +1216,9 @@
 }
 
 .success-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     font-size: 4rem;
     color: #4caf50;
     margin-bottom: 20px;
@@ -1701,6 +1705,9 @@
 }
 
 .close-payment {
+    position: absolute;
+    top: 20px;
+    right: 20px;
     background: #f3f4f6;
     border: none;
     width: 36px;
@@ -1709,13 +1716,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #4b5563;
+    font-size: 1.1rem;
     cursor: pointer;
+    z-index: 10;
     transition: all 0.2s ease;
 }
 
 .close-payment:hover {
     background: #e5e7eb;
+    color: #111827;
     transform: rotate(90deg);
+}
+
+.close-payment svg {
+    width: 16px;
+    height: 16px;
+    color: #4b5563;
+    fill: #4b5563;
+    display: block;
 }
 
 .payment-content {

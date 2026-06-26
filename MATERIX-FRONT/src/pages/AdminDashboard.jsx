@@ -2032,6 +2032,28 @@ function OrderMapView({ orders, onAssignAgent, onViewDetails }) {
 function OrdersTab() {
   const [orders, setOrders]           = useState([]);
   const [loading, setLoading]         = useState(true);
+  const [toast, setToast]             = useState(null);
+  const [deliveryAgents, setDeliveryAgents] = useState([]);
+
+  function showToast(msg, type = "success") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  const fetchDeliveryAgents = useCallback(() => {
+    apiFetch("/api/auth/admin/users/")
+      .then(data => {
+        if (Array.isArray(data)) {
+          setDeliveryAgents(data.filter(u => u.role === "delivery"));
+        }
+      })
+      .catch(err => console.error("Error loading delivery agents:", err));
+  }, []);
+
+  useEffect(() => {
+    fetchDeliveryAgents();
+  }, [fetchDeliveryAgents]);
+
   const [search, setSearch]           = useState("");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [detail, setDetail]           = useState(null);
@@ -2102,8 +2124,9 @@ function OrdersTab() {
       await fetchOrders();
       setEditOpen(false);
       setOrderToEdit(null);
+      showToast("Order changes saved successfully.", "success");
     } catch {
-      alert("Failed to save changes.");
+      showToast("Failed to save changes.", "error");
     } finally {
       setSaving(false);
     }
@@ -2128,9 +2151,10 @@ function OrdersTab() {
       await fetchOrders();
       setOpenCreate(false);
       setForm({ customer: "", email: "", agent: "", total: "", status: "Pending", pickup: "" });
+      showToast("Order created successfully.", "success");
     } catch {
       // Even if API doesn't support direct order creation, degrade gracefully
-      alert("Order creation not supported via API yet.");
+      showToast("Order creation not supported via API yet.", "error");
     } finally {
       setSaving(false);
     }
@@ -2308,7 +2332,7 @@ function OrdersTab() {
                 ["Email",       detail.customer_email ?? detail.email],
                 ["Agent",       detail.assigned_agent ?? detail.assigned_agent_username ?? detail.agent],
                 ["Status",      detail.status],
-                ["Pickup",      detail.pickup],
+                ["Pickup",      (detail.pickup && detail.pickup !== "—") ? detail.pickup : (detail.customer_address || detail.delivery_address)],
                 ["Transaction", detail.transaction_id ?? detail.txn],
                 ["Total",       `${Number(detail.total_price ?? detail.total ?? 0).toFixed(2)} FCFA`],
               ].map(([k, v]) => {
@@ -2393,12 +2417,18 @@ function OrdersTab() {
           <ModalHeader title="Edit Order" onClose={() => setEditOpen(false)} />
           <form onSubmit={submitEdit} className="adm-space-4">
             <div className="adm-grid-2">
-              <FieldInput 
-                label="Assigned Agent ID" 
-                type="number" 
+              <FieldSelect 
+                label="Assigned Agent" 
                 value={editForm.agent} 
-                onChange={e => setEditForm(p => ({ ...p, agent: e.target.value }))} 
-              />
+                onChange={e => setEditForm(p => ({ ...p, agent: e.target.value }))}
+              >
+                <option value="">No Agent Assigned</option>
+                {deliveryAgents.map(agent => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.id}-{agent.username}
+                  </option>
+                ))}
+              </FieldSelect>
               <FieldInput 
                 label="Total (FCFA)" 
                 required 
@@ -2450,6 +2480,13 @@ function OrdersTab() {
           </form>
         </div>
       </Modal>
+
+      {toast && (
+        <div className={`fixed top-5 right-5 z-[60] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg text-sm font-medium text-white transition-all ${toast.type === "success" ? "bg-green-600" : "bg-red-500"}`} style={{ position: "fixed", top: "20px", right: "20px", zIndex: 2000, display: "flex", alignItems: "center", gap: "12px", padding: "14px 20px", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", fontSize: "14px", fontWeight: 500, color: "#ffffff", backgroundColor: toast.type === "success" ? "#16a34a" : "#ef4444" }}>
+          {toast.type === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }

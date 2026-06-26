@@ -7,6 +7,46 @@ from authentication.models import User
 from .models import ServiceRequest
 from .serializers import TechnicianPublicSerializer, ServiceRequestSerializer
 from notifications.models import Notification
+import re
+from datetime import datetime
+
+def format_request_message_for_tech(client_name, raw_message):
+    urgency = "normal"
+    date_str = ""
+    desc = raw_message or ""
+    
+    urgency_match = re.search(r'\[Urgency:\s*([^\]]+)\]', desc, re.IGNORECASE)
+    if urgency_match:
+        urgency = urgency_match.group(1).strip()
+        
+    date_match = re.search(r'\[Preferred Date:\s*([^\]]+)\]', desc, re.IGNORECASE)
+    if date_match:
+        date_str = date_match.group(1).strip()
+        
+    desc = re.sub(r'\[Urgency:\s*[^\]]+\]\s*', '', desc, flags=re.IGNORECASE)
+    desc = re.sub(r'\[Preferred Date:\s*[^\]]+\]\s*', '', desc, flags=re.IGNORECASE)
+    desc = desc.strip()
+    
+    formatted_date = ""
+    if date_str and date_str.lower() != "any":
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            formatted_date = dt.strftime("%d/%m/%Y")
+        except ValueError:
+            formatted_date = date_str
+            
+    if formatted_date:
+        return f"New service request from {client_name}: {desc} on {formatted_date}"
+    else:
+        return f"New service request from {client_name}: {desc}"
+
+def format_request_message_for_client(raw_message, status, tech_name):
+    desc = raw_message or ""
+    desc = re.sub(r'\[Urgency:\s*[^\]]+\]\s*', '', desc, flags=re.IGNORECASE)
+    desc = re.sub(r'\[Preferred Date:\s*[^\]]+\]\s*', '', desc, flags=re.IGNORECASE)
+    desc = desc.strip()
+    
+    return f"Your service request '{desc}' has been {status} by {tech_name}."
 
 class TechnicianListView(generics.ListAPIView):
     serializer_class = TechnicianPublicSerializer
@@ -56,7 +96,7 @@ class ServiceRequestCreateView(APIView):
                 Notification.objects.create(
                     recipient_id=sr.technician_id,
                     request_id=str(sr.id),
-                    message=f"New service request from {sr.client_name}: '{sr.message[:30]}...'",
+                    message=format_request_message_for_tech(sr.client_name, sr.message),
                     notif_type="new_request"
                 )
             except Exception as e:
@@ -127,7 +167,7 @@ class ServiceRequestDetailView(APIView):
                     Notification.objects.create(
                         recipient_id=recipient_id,
                         request_id=str(updated_request.id),
-                        message=f"Your service request '{updated_request.message[:20]}...' has been {updated_request.status} by {user.username}."
+                        message=format_request_message_for_client(updated_request.message, updated_request.status, user.username)
                     )
                 except Exception as e:
                     print(f"Failed to create request notification: {e}")

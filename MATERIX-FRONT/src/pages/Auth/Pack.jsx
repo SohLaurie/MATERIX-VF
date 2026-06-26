@@ -38,7 +38,7 @@ const Pack = () => {
           <h3 className="plan-name">Technician Package</h3>
           <p className="plan-price">2,000 XAF / month</p>
           <span className="trial-note">
-            14-day trial for 500 XAF (deducted later)
+            14-day trial for 25 XAF (deducted later)
           </span>
           <ul className="plan-features">
             <li>Showcase your portfolio on our portal</li>

@@ -21,13 +21,19 @@ const CATEGORY_META = {
 
 const getCategoryMeta = (category) => {
   const key = (category || "").toLowerCase();
+  if (key === "other" || key === "others") {
+    return { label: "Others", color: "#475569", bg: "#F1F5F9", border: "#CBD5E1", icon: <Wrench size={12} /> };
+  }
   return CATEGORY_META[key] || { label: category || "Technician", color: "#475569", bg: "#F1F5F9", border: "#CBD5E1", icon: <Wrench size={12} /> };
 };
 
 /* ─── Helper: service label shown under technician name ─────────────────── */
 const getDisplayService = (tech) => {
   if (!tech) return "Technician";
-  if (tech.service === "other") return tech.custom_service || tech.other_service || "Specialist";
+  const isOther = (tech.service === "other" || tech.service === "others" || tech.category === "other" || tech.category === "others");
+  if (isOther) {
+    return tech.custom_service || tech.other_service || tech.specialty || "Specialist";
+  }
   if (tech.service) return tech.service.charAt(0).toUpperCase() + tech.service.slice(1);
   // fallback for mock data that only has category
   if (tech.category && tech.category !== "other") return tech.category.charAt(0).toUpperCase() + tech.category.slice(1);
@@ -36,9 +42,10 @@ const getDisplayService = (tech) => {
 
 /* ─── Helper: coverage from radius field ────────────────────────────────── */
 const getCoverage = (tech) => {
-  if (tech.radius) return `${tech.radius} km`;
-  if (tech.coverage) return tech.coverage;
-  return "—";
+  const r = tech.radius || tech.coverage || "";
+  if (!r) return "—";
+  if (String(r).toLowerCase().includes("km")) return r;
+  return `${r} km`;
 };
 
 /* ─── Helper: XAF rate (253–346 range for backend techs without a rate) ─── */

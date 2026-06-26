@@ -71,6 +71,7 @@ class OrderSerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField(read_only=True)
     transaction_id = serializers.CharField(read_only=True)
     assigned_agent = serializers.CharField(source="assigned_agent_username", read_only=True)
+    assigned_agent_id = serializers.IntegerField(required=False, allow_null=True)
     gps_location = serializers.DictField(required=False, allow_null=True)
     customer_phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     customer_email = serializers.SerializerMethodField()

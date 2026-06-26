@@ -7,14 +7,14 @@ const Payment = ({ onClose }) => {
   const [showPayment, setShowPayment] = useState(true);
   const [paymentStep, setPaymentStep] = useState("method");
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [paymentDetails, setPaymentDetails] = useState({ phone: "", name: "", email: "" });
+  const [paymentDetails, setPaymentDetails] = useState({ phone: "", name: "" });
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentCode, setPaymentCode] = useState("");
   const [processingMessage, setProcessingMessage] = useState("");
 
   const navigate = useNavigate();
 
-  const trialFee = 500;
+  const trialFee = 25;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -178,20 +178,6 @@ const Payment = ({ onClose }) => {
                     value={paymentDetails.name}
                     onChange={handleInputChange}
                     required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Email (Optional)</label>
-                <div className="input-with-icon">
-                  <FaEnvelope className="input-icon" />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="your.email@example.com"
-                    value={paymentDetails.email}
-                    onChange={handleInputChange}
                   />
                 </div>
               </div>

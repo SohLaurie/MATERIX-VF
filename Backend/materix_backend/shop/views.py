@@ -173,6 +173,9 @@ class AdminOrderDetailView(APIView):
         except Exception:
             return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Keep track of old agent ID to detect changes
+        old_agent_id = order.assigned_agent_id
+        
         status_val = request.data.get("status")
         agent_id_val = request.data.get("assigned_agent_id")
         
@@ -195,6 +198,22 @@ class AdminOrderDetailView(APIView):
                 setattr(order, key, request.data[key])
                 
         order.save()
+
+        # Send notification to delivery agent if assigned agent changed
+        if order.assigned_agent_id and order.assigned_agent_id != old_agent_id:
+            try:
+                from notifications.models import Notification
+                client_name = order.customer_username or "Customer"
+                
+                Notification.objects.create(
+                    recipient_id=order.assigned_agent_id,
+                    request_id=str(order.id),
+                    message=f"New Order [{str(order.id)}] from {client_name} has being assigned to you",
+                    notif_type="order_assigned"
+                )
+            except Exception as e:
+                print(f"Failed to create order assignment notification: {e}")
+
         serializer = OrderSerializer(order, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 

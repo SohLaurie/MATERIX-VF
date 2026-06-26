@@ -599,7 +599,7 @@ const Register = () => {
       if (res.status === 201) {
         setSubmitted(true);
         setTimeout(() => {
-          navigate("/verify", { state: { email: techForm.email } });
+          navigate("/login");
         }, 2000);
       }
     } catch (err) {
@@ -824,7 +824,7 @@ const Register = () => {
                 <Check size={32} style={{ color: "#22C55E" }} strokeWidth={3} />
               </div>
               <h2 style={{ fontWeight: 700, fontSize: "1.25rem", color: "#0F172A", margin: 0 }}>Registration Submitted!</h2>
-              <p style={{ color: "#64748B", marginTop: "8px", fontSize: "0.875rem", margin: 0 }}>Redirecting to email verification...</p>
+              <p style={{ color: "#64748B", marginTop: "8px", fontSize: "0.875rem", margin: 0 }}>Redirecting to login...</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 flex-1 min-h-0">
