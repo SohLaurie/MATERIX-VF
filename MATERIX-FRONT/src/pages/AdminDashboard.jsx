@@ -1657,11 +1657,18 @@ function OrderMapView({ orders, onAssignAgent, onViewDetails }) {
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
   const [geocodeCache, setGeocodeCache] = useState({});
+  const [resolvedCoords, setResolvedCoords] = useState({});
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [geocoding, setGeocoding] = useState(false);
   const [hiddenOrderIds, setHiddenOrderIds] = useState([]);
 
   const visibleOrders = orders.filter(o => !hiddenOrderIds.includes(o.id ?? o._id));
+  const hasFitBoundsRef = useRef(false);
+  const visibleOrdersKey = visibleOrders.map(o => o.id ?? o._id).join(",");
+
+  useEffect(() => {
+    hasFitBoundsRef.current = false;
+  }, [visibleOrdersKey]);
 
   // Geocode address
   const geocodeAddress = async (address) => {
@@ -1690,7 +1697,71 @@ function OrderMapView({ orders, onAssignAgent, onViewDetails }) {
     mapInstanceRef.current = map;
   }, []);
 
-  // Update markers
+  // 1. Geocode all orders sequentially, updating resolvedCoords state
+  useEffect(() => {
+    let active = true;
+    
+    const resolveAll = async () => {
+      const newResolved = { ...resolvedCoords };
+      let changed = false;
+      let hasUnresolvedAddress = false;
+
+      for (const order of visibleOrders) {
+        const orderId = order.id ?? order._id;
+        if (newResolved[orderId]) continue; // already resolved
+
+        if (order.gps_location && typeof order.gps_location === 'object' && order.gps_location.lat && order.gps_location.lng) {
+          newResolved[orderId] = {
+            lat: parseFloat(order.gps_location.lat),
+            lng: parseFloat(order.gps_location.lng)
+          };
+          changed = true;
+        } else {
+          const addr = order.customer_address || order.delivery_address;
+          if (addr) {
+            if (geocodeCache[addr]) {
+              newResolved[orderId] = geocodeCache[addr];
+              changed = true;
+            } else {
+              hasUnresolvedAddress = true;
+            }
+          }
+        }
+      }
+
+      if (changed && active) {
+        setResolvedCoords(newResolved);
+      }
+
+      // If there are unresolved addresses, geocode them sequentially with a rate limit delay
+      if (hasUnresolvedAddress) {
+        setGeocoding(true);
+        for (const order of visibleOrders) {
+          if (!active) return;
+          const orderId = order.id ?? order._id;
+          if (newResolved[orderId]) continue;
+
+          const addr = order.customer_address || order.delivery_address;
+          if (addr && !geocodeCache[addr]) {
+            // Respect rate limit: wait 1 second
+            await new Promise(r => setTimeout(r, 1000));
+            if (!active) return;
+            const coords = await geocodeAddress(addr);
+            if (coords) {
+              newResolved[orderId] = coords;
+              setResolvedCoords(prev => ({ ...prev, [orderId]: coords }));
+            }
+          }
+        }
+        setGeocoding(false);
+      }
+    };
+
+    resolveAll();
+    return () => { active = false; };
+  }, [visibleOrders, geocodeCache]);
+
+  // 2. Synchronously draw markers based on resolvedCoords
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -1699,68 +1770,55 @@ function OrderMapView({ orders, onAssignAgent, onViewDetails }) {
     markersRef.current = [];
 
     const bounds = [];
+    const groups = {};
 
-    (async () => {
-      setGeocoding(true);
-      const groups = {};
+    for (const order of visibleOrders) {
+      const orderId = order.id ?? order._id;
+      const coords = resolvedCoords[orderId];
+      if (!coords) continue;
 
-      for (const order of visibleOrders) {
-        let coords = null;
-        if (order.gps_location && typeof order.gps_location === 'object' && order.gps_location.lat && order.gps_location.lng) {
-          coords = {
-            lat: parseFloat(order.gps_location.lat),
-            lng: parseFloat(order.gps_location.lng)
-          };
-        } else {
-          const addr = order.customer_address || order.delivery_address;
-          if (addr) {
-            coords = await geocodeAddress(addr);
-          }
-        }
+      const key = `${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`;
+      if (!groups[key]) {
+        groups[key] = { coords, orders: [] };
+      }
+      groups[key].orders.push(order);
+    }
 
-        if (!coords) continue;
+    for (const [key, group] of Object.entries(groups)) {
+      const { coords, orders: groupOrders } = group;
+      bounds.push([coords.lat, coords.lng]);
 
-        const key = `${coords.lat.toFixed(5)},${coords.lng.toFixed(5)}`;
-        if (!groups[key]) {
-          groups[key] = { coords, orders: [] };
-        }
-        groups[key].orders.push(order);
+      let color = "#6b7280";
+      const statuses = groupOrders.map(o => o.status);
+      if (statuses.includes("Pending")) {
+        color = ORDER_STATUS_COLORS["Pending"];
+      } else if (statuses.includes("In Progress")) {
+        color = ORDER_STATUS_COLORS["In Progress"];
+      } else if (statuses.includes("Delivered")) {
+        color = ORDER_STATUS_COLORS["Delivered"];
       }
 
-      for (const [key, group] of Object.entries(groups)) {
-        const { coords, orders: groupOrders } = group;
-        bounds.push([coords.lat, coords.lng]);
-
-        let color = "#6b7280";
-        const statuses = groupOrders.map(o => o.status);
-        if (statuses.includes("Pending")) {
-          color = ORDER_STATUS_COLORS["Pending"];
-        } else if (statuses.includes("In Progress")) {
-          color = ORDER_STATUS_COLORS["In Progress"];
-        } else if (statuses.includes("Delivered")) {
-          color = ORDER_STATUS_COLORS["Delivered"];
+      const marker = L.marker([coords.lat, coords.lng], { icon: makeColoredOrderIcon(color) });
+      marker.on("click", () => {
+        setSelectedGroup({ coords, orders: groupOrders });
+        const map = mapInstanceRef.current;
+        if (map) {
+          const zoom = map.getZoom() || 13;
+          const offset = 0.08 / Math.pow(2, zoom - 10);
+          map.setView([coords.lat + offset, coords.lng], zoom);
         }
+      });
+      marker.addTo(map);
+      markersRef.current.push(marker);
+    }
 
-        const marker = L.marker([coords.lat, coords.lng], { icon: makeColoredOrderIcon(color) });
-        marker.on("click", () => {
-          setSelectedGroup({ coords, orders: groupOrders });
-          const map = mapInstanceRef.current;
-          if (map) {
-            const zoom = map.getZoom() || 13;
-            const offset = 0.08 / Math.pow(2, zoom - 10);
-            map.setView([coords.lat + offset, coords.lng], zoom);
-          }
-        });
-        marker.addTo(map);
-        markersRef.current.push(marker);
-      }
-
-      setGeocoding(false);
-      if (bounds.length > 0) {
-        try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 }); } catch { /* ignore */ }
-      }
-    })();
-  }, [visibleOrders]);
+    if (bounds.length > 0 && !hasFitBoundsRef.current) {
+      try {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        hasFitBoundsRef.current = true;
+      } catch { /* ignore */ }
+    }
+  }, [visibleOrders, resolvedCoords]);
 
   useEffect(() => {
     setTimeout(() => mapInstanceRef.current?.invalidateSize(), 150);
@@ -1772,46 +1830,31 @@ function OrderMapView({ orders, onAssignAgent, onViewDetails }) {
   };
 
   const handleSidePanelClick = async (order) => {
-    let lat = null, lng = null;
-    if (order.gps_location && typeof order.gps_location === 'object' && order.gps_location.lat && order.gps_location.lng) {
-      lat = parseFloat(order.gps_location.lat);
-      lng = parseFloat(order.gps_location.lng);
+    setSelectedGroup(null); // Close any open details overlay first
+    const orderId = order.id ?? order._id;
+    let coords = resolvedCoords[orderId];
+
+    if (!coords) {
+      if (order.gps_location && typeof order.gps_location === 'object' && order.gps_location.lat && order.gps_location.lng) {
+        coords = {
+          lat: parseFloat(order.gps_location.lat),
+          lng: parseFloat(order.gps_location.lng)
+        };
+      } else {
+        const addr = order.customer_address || order.delivery_address;
+        if (addr) {
+          coords = await geocodeAddress(addr);
+        }
+      }
+      if (coords) {
+        setResolvedCoords(prev => ({ ...prev, [orderId]: coords }));
+      }
     }
 
-    if (lat !== null && lng !== null) {
-      const matchKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
-      const sameLocationOrders = visibleOrders.filter(o => {
-        if (o.gps_location && typeof o.gps_location === 'object' && o.gps_location.lat && o.gps_location.lng) {
-          const oLat = parseFloat(o.gps_location.lat);
-          const oLng = parseFloat(o.gps_location.lng);
-          return `${oLat.toFixed(5)},${oLng.toFixed(5)}` === matchKey;
-        }
-        return false;
-      });
-
-      setSelectedGroup({
-        coords: { lat, lng },
-        orders: sameLocationOrders.length > 0 ? sameLocationOrders : [order]
-      });
+    if (coords) {
       const map = mapInstanceRef.current;
       if (map) {
-        const zoom = map.getZoom() || 13;
-        const offset = 0.08 / Math.pow(2, zoom - 10);
-        map.setView([lat + offset, lng], zoom);
-      }
-    } else {
-      const addr = order.customer_address || order.delivery_address;
-      if (addr) {
-        const coords = await geocodeAddress(addr);
-        if (coords) {
-          setSelectedGroup({ coords, orders: [order] });
-          const map = mapInstanceRef.current;
-          if (map) {
-            const zoom = map.getZoom() || 13;
-            const offset = 0.08 / Math.pow(2, zoom - 10);
-            map.setView([coords.lat + offset, coords.lng], zoom);
-          }
-        }
+        map.setView([coords.lat, coords.lng], 14);
       }
     }
   };
