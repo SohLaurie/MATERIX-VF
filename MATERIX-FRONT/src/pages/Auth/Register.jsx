@@ -124,28 +124,6 @@ function Sidebar({ step, techForm, photoInputRef, handleProfilePhotoChange, setT
         </p>
       </div>
 
-      {/* What happens next */}
-      <div className="tech-card" style={{ padding: "20px", marginBottom: 0 }}>
-        <div className="flex items-center gap-2 mb-4">
-          <Info size={18} style={{ color: "#0F172A" }} />
-          <h3 className="tech-title" style={{ fontSize: "0.9375rem", margin: 0 }}>What happens next?</h3>
-        </div>
-        <div className="flex flex-col gap-3.5">
-          {[
-            "Submit your registration",
-            "Our team reviews your profile",
-            "Get verified and start receiving jobs",
-            "Build your reputation and grow",
-          ].map((item, i) => (
-            <div key={i} className="flex items-start gap-2.5">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#0F172A" }}>
-                <span style={{ fontSize: "0.6875rem", fontWeight: 700, color: "white" }}>{i + 1}</span>
-              </div>
-              <p style={{ fontSize: "0.8125rem", color: "#475569", lineHeight: 1.4, margin: 0 }}>{item}</p>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
